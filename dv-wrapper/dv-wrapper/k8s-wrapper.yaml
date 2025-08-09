@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wrapper-config
+  namespace: ai
+data:
+  SYSTEM_PROMPT: |
+    You are Datavalley’s AI Interviewer. Be concise and probing; follow STAR for behavioral questions.
+  MODEL: "llama3.1:8b-instruct-q5_K_M"
+  MAX_TOKENS: "512"
+  TIMEOUT_MS: "30000"
+  VLLM_URL: "http://ollama.ai.svc.cluster.local:11434/v1"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wrapper-secret
+  namespace: ai
+type: Opaque
+stringData:
+  INTERNAL_KEY: "9d7h32Ghpq_!Bxm92JKj3kLvaL@8qYpf"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dv-wrapper
+  namespace: ai
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: dv-wrapper }
+  template:
+    metadata: { labels: { app: dv-wrapper } }
+    spec:
+      containers:
+      - name: wrapper
+        image: asia-south1-docker.pkg.dev/datavalley-383814/dv-ai/wrapper:v1
+        ports: [{ containerPort: 3000 }]
+        env:
+        - name: VLLM_URL
+          valueFrom: { configMapKeyRef: { name: wrapper-config, key: VLLM_URL } }
+        - name: MODEL
+          valueFrom: { configMapKeyRef: { name: wrapper-config, key: MODEL } }
+        - name: SYSTEM_PROMPT
+          valueFrom: { configMapKeyRef: { name: wrapper-config, key: SYSTEM_PROMPT } }
+        - name: TIMEOUT_MS
+          valueFrom: { configMapKeyRef: { name: wrapper-config, key: TIMEOUT_MS } }
+        - name: MAX_TOKENS
+          valueFrom: { configMapKeyRef: { name: wrapper-config, key: MAX_TOKENS } }
+        - name: INTERNAL_KEY
+          valueFrom: { secretKeyRef: { name: wrapper-secret, key: INTERNAL_KEY } }
+        readinessProbe:
+          httpGet: { path: /healthz, port: 3000 }
+          initialDelaySeconds: 5
+        livenessProbe:
+          httpGet: { path: /healthz, port: 3000 }
+          initialDelaySeconds: 10
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dv-wrapper
+  namespace: ai
+spec:
+  selector: { app: dv-wrapper }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+  type: ClusterIP
+---
+# temporary public LB; we'll switch to HTTPS Ingress later
+apiVersion: v1
+kind: Service
+metadata:
+  name: dv-wrapper-public
+  namespace: ai
+spec:
+  selector: { app: dv-wrapper }
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
