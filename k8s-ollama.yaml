@@ -23,10 +23,10 @@ spec:
         resources:
           requests:
             cpu: "2000m"
-            memory: "8Gi"
+            memory: "10Gi"
           limits:
             cpu: "4000m"
-            memory: "12Gi"
+            memory: "14Gi"
         volumeMounts:
           - name: models
             mountPath: /root/.ollama

@@ -1,10 +1,23 @@
 {
   "name": "dv-llm-wrapper",
+  "version": "1.0.0",
+  "description": "Datavalley AI Interviewer wrapper (Express → Ollama)",
   "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "HOST=0.0.0.0 PORT=8080 node index.js"
+  },
   "dependencies": {
-    "express": "^4.19.2",
-    "node-fetch": "^3.3.2",
-    "pino": "^9.0.0",
-    "cors": "^2.8.5"
-  }
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "pino": "^9.8.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "license": "MIT"
 }

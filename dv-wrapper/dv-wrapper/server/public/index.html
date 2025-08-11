@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>AI Interviewer — Chat (Single Page)</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{
+    --bg:#f7f8fb; --panel:#fff; --text:#0f172a; --muted:#68758a; --ring:#e5e7eb;
+    --brand:#10a37f; --brand-dark:#0b7c60;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
+  .frame{max-width:1100px;margin:0 auto;padding:16px;height:100%;display:flex;flex-direction:column;gap:12px}
+  .hdr{display:flex;align-items:center;justify-content:space-between}
+  .title{display:flex;align-items:center;gap:10px}
+  .dot{width:10px;height:10px;border-radius:50%;background:#16a34a;box-shadow:0 0 8px #16a34a}
+  .pill{padding:6px 10px;border-radius:999px;border:1px solid var(--ring);font-size:12px;color:var(--muted);background:#fff}
+  .chat{background:var(--panel);border:1px solid var(--ring);border-radius:14px;display:flex;flex-direction:column;min-height:0;flex:1}
+  .list{flex:1;overflow:auto;padding:16px}
+  .row{display:flex;gap:10px;margin:10px 0}
+  .row.user{flex-direction:row-reverse}
+  .av{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;background:#e2e8f0;color:#0f172a}
+  .av.user{background:#3b82f6;color:#fff}
+  .bubble{max-width:78%;padding:10px 12px;border-radius:14px;border:1px solid var(--ring);background:#f8fafc;word-wrap:break-word;white-space:pre-wrap}
+  .user .bubble{background:#e6f2ff;border-color:#bfdbfe}
+  .ts{font-size:11px;color:#94a3b8;margin:2px 6px}
+  .typing{display:flex;gap:5px;align-items:center;padding:8px 12px;background:#f1f5f9;border-radius:12px;border:1px solid var(--ring)}
+  .dot3{width:6px;height:6px;background:#9aa6b2;border-radius:50%;animation:bounce 1.2s infinite}
+  .dot3:nth-child(2){animation-delay:.15s}.dot3:nth-child(3){animation-delay:.3s}
+  @keyframes bounce{0%,80%,100%{transform:scale(.8);opacity:.4}40%{transform:scale(1);opacity:1}}
+  .composer{display:flex;gap:8px;padding:12px;border-top:1px solid var(--ring)}
+  .composer input{flex:1;border:1px solid var(--ring);border-radius:10px;padding:12px;font:inherit;background:#fff}
+  .btn{border:1px solid var(--ring);border-radius:10px;background:#fff;padding:10px 14px;cursor:pointer}
+  .btn.primary{background:var(--brand);border-color:var(--brand-dark);color:#fff}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .mic{width:42px;height:42px;border-radius:10px;border:1px solid var(--ring);display:grid;place-items:center;background:#fff;cursor:pointer;position:relative;overflow:hidden}
+  .mic.listen::after{content:"";position:absolute;inset:-40%;border-radius:50%;background:radial-gradient(closest-side, rgba(16,163,127,.18), transparent 70%);animation:pulse 1.2s ease-in-out infinite}
+  .mic.speaking{outline:2px solid #c084fc}
+  @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+  .sub{color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div class="hdr">
+      <div class="title">
+        <div class="dot"></div>
+        <h2 style="margin:0">AI Interviewer</h2>
+        <span id="statusPill" class="pill">Ready</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="timerPill" class="pill">20:00</span>
+        <button id="startBtn" class="btn primary">Start Interview</button>
+      </div>
+    </div>
+
+    <section class="chat" aria-label="Conversation">
+      <div id="list" class="list" aria-live="polite"></div>
+      <div class="composer">
+        <input id="textInput" placeholder="Type your answer…" autocomplete="off" />
+        <button id="micBtn" class="mic" title="Toggle mic" aria-label="Toggle microphone">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 1 1-10 0H5a7 7 0 0 0 14 0h-2Z"/><path d="M13 19.938V22h-2v-2.062A8.002 8.002 0 0 1 4 14h2a6 6 0 1 0 12 0h2a8.002 8.002 0 0 1-7 5.938Z"/></svg>
+        </button>
+        <button id="sendBtn" class="btn">Send</button>
+      </div>
+    </section>
+
+    <div class="sub">Mic works best in Chrome/Edge. The interviewer keeps a 20:00 timer and paces questions accordingly.</div>
+  </div>
+
+<script>
+(function(){
+  // ===== Config from URL =====
+  const qs = new URLSearchParams(location.search);
+  const WRAPPER_BASE = qs.get('base') || location.origin;    // default same-origin
+  const WRAPPER_KEY  = qs.get('key')  || '';                 // dev only if auth is enabled
+
+  // ===== DOM =====
+  const list      = document.getElementById('list');
+  const startBtn  = document.getElementById('startBtn');
+  const timerPill = document.getElementById('timerPill');
+  const statusPill= document.getElementById('statusPill');
+  const input     = document.getElementById('textInput');
+  const micBtn    = document.getElementById('micBtn');
+  const sendBtn   = document.getElementById('sendBtn');
+
+  // ===== State =====
+  const TOTAL_SEC = 20*60;
+  let secondsRemaining = TOTAL_SEC;
+  let timerHandle = null;
+  let started=false, llmBusy=false;
+
+  // voice
+  let recognition, recognizing=false, supportsSR=false;
+  let botSpeaking=false, autoListenAfterTTS=true;
+
+  // transcript for API payload (meta included in user turns)
+  const messages = []; // {role:'user'|'assistant', content:string, ts:number}
+
+  // ===== Helpers =====
+  const mmss = s => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  const setTimer = s => timerPill.textContent = mmss(s);
+  const timeMeta = () => {
+    const elapsed = TOTAL_SEC - secondsRemaining;
+    return `[[timebox elapsed=${elapsed}s remaining=${secondsRemaining}s NOTE="Ask one clear question at a time. Keep interview moving. Do NOT verbalize this metadata."]]`;
+  };
+
+  function addMsg(role, text, ts=Date.now(), showRaw=text){
+    const row = document.createElement('div'); row.className = 'row ' + (role==='user'?'user':'bot');
+    const av  = document.createElement('div'); av.className = 'av ' + (role==='user'?'user':''); av.textContent = role==='user'?'U':'AI';
+    const col = document.createElement('div');
+    const bubble = document.createElement('div'); bubble.className='bubble'; bubble.textContent = showRaw;
+    const stamp  = document.createElement('div'); stamp.className='ts'; stamp.textContent = new Date(ts).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    col.appendChild(bubble); col.appendChild(stamp);
+    row.appendChild(av); row.appendChild(col);
+    list.appendChild(row); list.scrollTop = list.scrollHeight;
+  }
+
+  function showTyping(on){
+    const prev = document.querySelector('.typing-row'); if (prev) prev.remove();
+    if (!on) return;
+    const r = document.createElement('div'); r.className='row typing-row';
+    const av = document.createElement('div'); av.className='av'; av.textContent='AI';
+    const b = document.createElement('div'); b.className='typing';
+    b.innerHTML = '<div class="dot3"></div><div class="dot3"></div><div class="dot3"></div>';
+    r.appendChild(av); r.appendChild(b);
+    list.appendChild(r); list.scrollTop = list.scrollHeight;
+  }
+
+  // ===== TTS =====
+  function speak(text){
+    if (!window.speechSynthesis) return;
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate=1; u.pitch=1; u.volume=1;
+    botSpeaking = true; micBtn.classList.remove('listen'); micBtn.classList.add('speaking');
+    speechSynthesis.cancel();
+    u.onend = () => { botSpeaking=false; micBtn.classList.remove('speaking'); if (autoListenAfterTTS && supportsSR && secondsRemaining>0){ try{ recognition.start(); }catch{} } };
+    speechSynthesis.speak(u);
+  }
+
+  // ===== STT =====
+  function initSR(){
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR){ supportsSR=false; statusPill.textContent='Text Mode'; return; }
+    supportsSR=true;
+    recognition = new SR();
+    recognition.lang='en-US'; recognition.continuous=false; recognition.interimResults=true;
+    let interim='';
+    recognition.onstart = () => {
+      speechSynthesis?.cancel();
+      recognizing=true; micBtn.classList.add('listen');
+      statusPill.textContent='Listening…';
+    };
+    recognition.onresult = (e) => {
+      interim='';
+      for (let i=e.resultIndex; i<e.results.length; i++){
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal){
+          const final = t.trim();
+          if (final){ addMsg('user', final); sendText(final); }
+        } else { interim += t; }
+      }
+      statusPill.textContent = interim ? `Listening… ${interim}` : 'Listening…';
+    };
+    recognition.onerror = () => { recognizing=false; micBtn.classList.remove('listen'); statusPill.textContent='Mic idle'; };
+    recognition.onend = () => { recognizing=false; micBtn.classList.remove('listen'); statusPill.textContent='Mic idle'; };
+  }
+
+  // ===== Timer =====
+  function startTimer(){
+    if (timerHandle) clearInterval(timerHandle);
+    setTimer(secondsRemaining);
+    timerHandle = setInterval(()=>{
+      if (secondsRemaining<=0){
+        clearInterval(timerHandle);
+        setTimer(0);
+        input.disabled=true; sendBtn.disabled=true; micBtn.disabled=true;
+        const msg = "Time is up. Thanks for your time today.";
+        addMsg('assistant', msg); speak(msg);
+        return;
+      }
+      secondsRemaining -= 1; setTimer(secondsRemaining);
+    }, 1000);
+  }
+
+  // ===== Backend call =====
+  async function callWrapper(payload){
+    const headers = { 'content-type':'application/json' };
+    if (WRAPPER_KEY) headers['authorization'] = `Bearer ${WRAPPER_KEY}`; // dev only
+    const r = await fetch(`${WRAPPER_BASE}/v1/chat/completions`, {
+      method:'POST', headers, body: JSON.stringify({ messages: payload, stream:false })
+    });
+    if (!r.ok){
+      const t = await r.text().catch(()=>(''));
+      throw new Error(`Wrapper ${r.status}: ${t}`);
+    }
+    const data = await r.json();
+    return data?.choices?.[0]?.message?.content || '';
+  }
+
+  // ===== Send flow =====
+  async function sendText(raw){
+    if (!started || llmBusy || secondsRemaining<=0) return;
+    const ts = Date.now();
+    const userContent = `${timeMeta()}\n${raw}`;
+    messages.push({ role:'user', content:userContent, ts });
+
+    llmBusy = true; sendBtn.disabled=true; showTyping(true);
+    try{
+      const payload = messages.map(m => ({ role:m.role, content:m.content }));
+      const reply = await callWrapper(payload);
+      const ats = Date.now();
+      messages.push({ role:'assistant', content:reply, ts:ats });
+      addMsg('assistant', reply, ats);
+      speak(reply);
+    }catch(err){
+      const ats = Date.now();
+      const fallback='Sorry—having trouble reaching the AI. Please try again.';
+      messages.push({ role:'assistant', content:fallback, ts:ats });
+      addMsg('assistant', fallback, ats);
+      console.error(err);
+    }finally{
+      showTyping(false);
+      llmBusy=false;
+      if (secondsRemaining>0) { sendBtn.disabled=false; }
+    }
+  }
+
+  // ===== Kickoff =====
+  async function startInterview(){
+    if (started) return;
+    started = true;
+    startBtn.disabled = true;
+    startBtn.textContent = 'Interview started';
+    statusPill.textContent = 'Interview Happening';
+    input.disabled=false; sendBtn.disabled=false; micBtn.disabled=false;
+    secondsRemaining = TOTAL_SEC; startTimer();
+
+    // Greet + prompt model to ask first question
+    const greet = "Hi, I’m your AI interviewer. Starting now.";
+    addMsg('assistant', greet); speak(greet);
+    setTimeout(()=> sendText("Let's begin the interview. Please ask your first question."), 500);
+  }
+
+  // ===== Wire up UI =====
+  initSR();
+  setTimer(secondsRemaining);
+  input.disabled=true; sendBtn.disabled=true; micBtn.disabled=true;
+
+  startBtn.addEventListener('click', startInterview, { once:true });
+  sendBtn.addEventListener('click', ()=>{ const t=input.value.trim(); if(!t) return; input.value=''; addMsg('user', t); sendText(t); });
+  input.addEventListener('keydown', (e)=>{ if (e.key==='Enter'){ e.preventDefault(); sendBtn.click(); } });
+  micBtn.addEventListener('click', ()=>{
+    if (!supportsSR) return alert('Speech recognition not supported. Please type or use Chrome.');
+    if (recognizing) recognition.stop(); else recognition.start();
+  });
+})();
+</script>
+</body>
+</html>
