@@ -7,14 +7,12 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const app = express()
+const log = pino()
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/', (_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 
 app.get('/healthz', (_, res) => res.send('ok'))   
-
-
-const app = express()
-const log = pino()
 
 // --- core middleware ---
 app.use(cors())
