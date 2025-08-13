@@ -1,0 +1,41 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: interview-gateway
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+    run.googleapis.com/cpu-throttling: "false"
+    autoscaling.knative.dev/minScale: "1"  # ← Add this line
+    autoscaling.knative.dev/maxScale: "10"
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/minScale: "1"
+        autoscaling.knative.dev/maxScale: "10" 
+        run.googleapis.com/cpu-throttling: "false" 
+        run.googleapis.com/service-account: "n8n-cloudrun-invoker@datavalley-383814.iam.gserviceaccount.com"
+    spec:
+      containerConcurrency: 100
+      containers:
+      - image: asia-south1-docker.pkg.dev/datavalley-383814/dv-ai/interview-gateway:glibc
+        ports:
+        - containerPort: 3000
+        env: 
+        - name: NODE_ENV 
+          value: "production" 
+        - name: JWT_SECRET 
+          value: "772bf5387ef5156f0c250b6fe01041b2622c6289d98f3af4a8c02c8856013d25" 
+        - name: OLLAMA_URL 
+          value: "http://34.93.1.158" 
+        - name: WRAPPER_URL 
+          value: "http://34.93.1.158" 
+        - name: WRAPPER_INTERNAL_KEY 
+          value: "9d7h32Ghpq_!Bxm92JKj3kLvaL@8qYpf" 
+        - name: MONGODB_URI
+          value: "mongodb+srv://ai_interviewer:Hyderabad123**@ai-interviewer-cluster.ctvdlak.mongodb.net/ai-interviewer?retryWrites=true&w=majority"
+        resources:
+          limits:
+            cpu: "1000m"
+            memory: "1024Mi"
