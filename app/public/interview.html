@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AI Interviewer - Conversation</title>
+  <!-- Tailwind via CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link href="css/common.css" rel="stylesheet" />
+  <link href="css/chat.css" rel="stylesheet" />
+</head>
+<body class="bg-gray-100 dark:bg-neutral-900 text-gray-900 dark:text-gray-200 min-h-screen flex flex-col">
+
+  <header class="bg-white dark:bg-neutral-800 shadow sticky top-0 z-50">
+    <div class="max-w-5xl mx-auto flex items-center justify-between px-5 py-4">
+      <div class="flex items-center space-x-3">
+        <img src="assets/icons/ai-avatar.svg" alt="AI Interviewer" class="h-8 w-8" />
+        <h1 class="font-semibold text-xl text-indigo-700 dark:text-indigo-300">AI Interviewer</h1>
+        <span class="inline-block bg-green-400 rounded-full px-2 py-0.5 text-xs font-semibold text-white">Ready</span>
+      </div>
+      <button id="startInterviewBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-4 py-2 rounded-lg shadow-md transition">
+        Start Interview
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-4xl mx-auto w-full flex flex-col justify-end relative" style="height: calc(100vh - 64px)">
+
+    <div id="chatContainer" class="flex-1 overflow-y-auto p-6 space-y-4 bg-white dark:bg-neutral-800 rounded-lg m-4 shadow-lg scrollbar-thin scrollbar-thumb-indigo-600 scrollbar-track-gray-200 dark:scrollbar-track-neutral-700">
+      <!-- Chat bubbles appended here -->
+      <div class="chat-bubble ai">
+        <div class="avatar">
+          <img src="assets/icons/ai-avatar.svg" alt="AI" />
+        </div>
+        <div class="message">
+          Hello! I'm your AI interviewer. Let's get started.
+        </div>
+      </div>
+    </div>
+
+    <form id="chatForm" class="flex items-center space-x-2 bg-white dark:bg-neutral-700 p-4 rounded-b-lg shadow-lg sticky bottom-0 z-50">
+      <input
+        type="text"
+        id="chatInput"
+        placeholder="Type your answer..."
+        autocomplete="off"
+        class="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-neutral-600 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 transition"
+        required
+      />
+      <button type="submit" aria-label="Send message" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow transition">
+        <!-- Paper plane icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10l9-7 9 7-9 7-9-7z"/>
+        </svg>
+      </button>
+      <button type="button" id="micBtn" aria-label="Voice input" class="bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-full shadow transition ml-2">
+        <!-- Microphone Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="w-6 h-6">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1v11m0 0a3 3 0 003-3h-6a3 3 0 003 3zM5 11a7 7 0 007 7v3m7-3a7 7 0 007-7"/>
+        </svg>
+      </button>
+    </form>
+
+  </main>
+
+  <script src="js/chat.js"></script>
+  <script src="js/websocket.js"></script>
+  <script src="js/speech.js"></script>
+</body>
+</html>
