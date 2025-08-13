@@ -20,6 +20,8 @@ spec:
         env:
           - name: OLLAMA_MODELS
             value: /root/.ollama
+          - name: OLLAMA_HOST
+            value: "0.0.0.0"
         resources:
           requests:
             cpu: "2000m"
@@ -30,6 +32,10 @@ spec:
         volumeMounts:
           - name: models
             mountPath: /root/.ollama
+        readinessProbe:
+          httpGet: { path: /api/tags, port: 11434 }
+          initialDelaySeconds: 30
+          periodSeconds: 10
       volumes:
         - name: models
           persistentVolumeClaim:

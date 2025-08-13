@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>AI Interviewer — Chat (Single Page)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+  <div class="frame">
+    <div class="hdr">
+      <div class="title">
+        <div class="dot"></div>
+        <h2 style="margin:0">AI Interviewer</h2>
+        <span id="statusPill" class="pill">Ready</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="timerPill" class="pill">20:00</span>
+        <button id="startBtn" class="btn primary">Start Interview</button>
+      </div>
+    </div>
+
+    <section class="chat" aria-label="Conversation">
+      <div id="list" class="list" aria-live="polite"></div>
+      <div class="composer">
+        <input id="textInput" placeholder="Type your answer…" autocomplete="off" />
+        <button id="micBtn" class="mic" title="Toggle mic" aria-label="Toggle microphone">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Zm5-3a5 5 0 1 1-10 0H5a7 7 0 0 0 14 0h-2Z"/><path d="M13 19.938V22h-2v-2.062A8.002 8.002 0 0 1 4 14h2a6 6 0 1 0 12 0h2a8.002 8.002 0 0 1-7 5.938Z"/></svg>
+        </button>
+        <button id="sendBtn" class="btn">Send</button>
+      </div>
+    </section>
+
+    <div class="sub">Mic works best in Chrome/Edge. The interviewer keeps a 20:00 timer and paces questions accordingly.</div>
+  </div>
+
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/interview.js"></script>
+</body>
+</html>
