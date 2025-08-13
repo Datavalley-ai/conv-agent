@@ -68,11 +68,23 @@ spec:
         - name: OLLAMA_BASE
           valueFrom: { configMapKeyRef: { name: wrapper-config, key: OLLAMA_BASE } }
         readinessProbe:
-          httpGet: { path: /healthz, port: 3000 }
+          httpGet:
+            path: /healthz
+            port: 3000
+            httpHeaders:
+              - name: Authorization
+                value: "Bearer 9d7h32Ghpq_!Bxm92JKj3kLvaL@8qYpf"  # Internal Key for Probe
           initialDelaySeconds: 5
+          periodSeconds: 10
         livenessProbe:
-          httpGet: { path: /healthz, port: 3000 }
+          httpGet:
+            path: /healthz
+            port: 3000
+            httpHeaders:
+              - name: Authorization
+                value: "Bearer 9d7h32Ghpq_!Bxm92JKj3kLvaL@8qYpf"  # Internal Key for Probe
           initialDelaySeconds: 10
+          periodSeconds: 10
         resources:
           requests:
             cpu: "250m"
