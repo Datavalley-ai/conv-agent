@@ -1,19 +1,17 @@
-# Use Debian-based Node.js LTS for full compatibility
 FROM node:20-slim
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files from app subdirectory
-COPY app/package*.json ./
+# Copy package files (no app/ prefix since we're in app directory)
+COPY package*.json ./
 
 # Install dependencies
 RUN npm install --only=production && npm cache clean --force
 
-# Copy application code from app subdirectory
-COPY app/ ./
+# Copy application code (no app/ prefix)
+COPY . ./
 
-# Create group and user with Debian commands
+# Create group and user
 RUN groupadd -g 1001 nodejs && \
     useradd -u 1001 -g nodejs -m nextjs
 
@@ -21,12 +19,12 @@ RUN groupadd -g 1001 nodejs && \
 RUN chown -R nextjs:nodejs /app
 USER nextjs
 
-# Expose port
-EXPOSE 3000
+# Expose port 8081 (not 3000)
+EXPOSE 8081
 
-# Health check with curl (pre-installed in node:20-slim)
+# Health check for port 8081
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl --fail http://localhost:3000/api/v1/healthz || exit 1
+  CMD curl --fail http://localhost:8081/api/v1/healthz || exit 1
 
 # Start the application
 CMD ["node", "src/app.js"]

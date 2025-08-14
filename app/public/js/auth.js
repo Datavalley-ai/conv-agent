@@ -26,13 +26,19 @@ class AuthManager {
             this.showLoginForm();
         });
 
+        // OAuth buttons
+        document.getElementById('googleSignIn').addEventListener('click', () => this.handleGoogleAuth('login'));
+        document.getElementById('googleSignUp').addEventListener('click', () => this.handleGoogleAuth('register'));
+        document.getElementById('datavalleySignIn').addEventListener('click', () => this.handleDatavalleyAuth('login'));
+        document.getElementById('datavalleySignUp').addEventListener('click', () => this.handleDatavalleyAuth('register'));
+
         // Form submissions
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+        document.querySelector('#loginForm form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleLogin();
         });
 
-        document.getElementById('registerForm').addEventListener('submit', (e) => {
+        document.querySelector('#registerForm form').addEventListener('submit', (e) => {
             e.preventDefault();
             this.handleRegister();
         });
@@ -48,6 +54,32 @@ class AuthManager {
         document.getElementById('registerForm').classList.add('hidden');
         document.getElementById('loginForm').classList.remove('hidden');
         this.clearMessages();
+    }
+
+    async handleGoogleAuth(type) {
+        this.showLoading(true);
+        this.clearMessages();
+
+        try {
+            // Redirect to Google OAuth
+            window.location.href = `${this.apiBaseUrl}/google?type=${type}`;
+        } catch (error) {
+            this.showError('Google authentication failed. Please try again.');
+            this.showLoading(false);
+        }
+    }
+
+    async handleDatavalleyAuth(type) {
+        this.showLoading(true);
+        this.clearMessages();
+
+        try {
+            // Redirect to Datavalley OAuth
+            window.location.href = `${this.apiBaseUrl}/datavalley?type=${type}`;
+        } catch (error) {
+            this.showError('Datavalley authentication failed. Please try again.');
+            this.showLoading(false);
+        }
     }
 
     async handleLogin() {
@@ -76,7 +108,7 @@ class AuthManager {
                 this.showError(data.error || 'Login failed');
             }
         } catch (error) {
-            this.showError('Network error. Please try again.');
+            this.showError('Network error. Please check your connection.');
         } finally {
             this.showLoading(false);
         }
@@ -110,7 +142,7 @@ class AuthManager {
                 this.showError(data.error || 'Registration failed');
             }
         } catch (error) {
-            this.showError('Network error. Please try again.');
+            this.showError('Network error. Please check your connection and try again.');
         } finally {
             this.showLoading(false);
         }
@@ -140,14 +172,12 @@ class AuthManager {
     }
 
     showLoading(show) {
-        const spinner = document.getElementById('loadingSpinner');
-        spinner.classList.toggle('hidden', !show);
-        
-        // Disable forms during loading
+        const loading = document.getElementById('loading');
         const forms = document.querySelectorAll('.auth-form');
+        
+        loading.classList.toggle('hidden', !show);
         forms.forEach(form => {
-            const inputs = form.querySelectorAll('input, button');
-            inputs.forEach(input => input.disabled = show);
+            form.classList.toggle('hidden', show);
         });
     }
 

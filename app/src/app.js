@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -5,12 +6,8 @@ const path = require('path');
 const config = require('./config');
 const logger = require('./utils/logger');
 const connectDB = require('./config/database');
-//const { authLimiter, apiLimiter } = require('./middleware/rateLimiter');
-
-
-// Import middleware
 const { errorHandler, notFound } = require('./middleware/error');
-const { requireAuth, bindSession } = require('./middleware/auth');
+const { requireAuth } = require('./middleware/auth');
 
 // Import routes
 const healthRoutes = require('./routes/api/v1/health');
@@ -18,24 +15,28 @@ const authRoutes = require('./routes/api/v1/auth');
 const interviewRoutes = require('./routes/api/v1/interview');
 const chatRoutes = require('./routes/api/v1/chat');
 
-// Connect to database
-connectDB();
-
 const app = express();
 
-// Trust proxy for session binding
-app.set('trust proxy', true);
+// Connect database first
+connectDB();
 
-// Security middleware
-app.use(helmet());
+// Middleware
 app.use(cors());
-
-// Body parsing middleware
+// Handle Google Cloud Shell IAP headers
+app.use((req, res, next) => {
+  // Add CORS headers for IAP
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-goog-iap-jwt-assertion");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+  next();
+});
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-//app.use('/api/v1/auth', authLimiter);
-//app.use('/api/v1', apiLimiter);
-
 
 // Static files
 app.use(express.static(path.join(__dirname, '../public')));
@@ -46,23 +47,12 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/interview', interviewRoutes);
 app.use('/api/v1/chat', chatRoutes);
 
-// Protected route example
-app.get('/api/v1/protected', requireAuth(['admin']), (req, res) => {
-  res.json({
-    message: 'This is a protected route',
-    user: req.user
-  });
-});
-
-// Basic route for frontend
-// Simple health check endpoint
+// Basic health check
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
-    service: 'ai-interviewer-gateway',
-    environment: config.nodeEnv,
-    version: '1.0.0'
+    service: 'ai-interviewer-gateway'
   });
 });
 
@@ -70,21 +60,17 @@ app.get('/health', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8081;
 
-// ✅ FIX: Declare server variable properly
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, "0.0.0.0", () => {
   logger.info(`🚀 AI Interviewer Gateway running on port ${PORT}`);
   logger.info(`📊 Health check available at http://localhost:${PORT}/api/v1/healthz`);
   logger.info(`🔐 Auth endpoints available at http://localhost:${PORT}/api/v1/auth/`);
   logger.info(`📋 Interview endpoints available at http://localhost:${PORT}/api/v1/interview/`);
   logger.info(`🤖 Chat endpoints available at http://localhost:${PORT}/api/v1/chat/`);
-  logger.info(`🔗 Ollama integration: ${config.ollama.url}`);
-  logger.info(`🔗 Wrapper integration: ${config.wrapper.url}`);
   logger.info(`✅ Phase 2 - Ollama Integration Complete!`);
 });
 
-// Set server timeout to prevent Cloud Run connection errors
-server.setTimeout(0); // Unlimited timeout
-
+server.setTimeout(0);
 module.exports = app;
+app.use('/api/v1', require('./routes/api/v1/health'));
