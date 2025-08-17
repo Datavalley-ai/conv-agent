@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: keep-ollama-warm
+  namespace: ai
+spec:
+  schedule: "*/5 * * * *"    # Every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl
+            image: curlimages/curl:7.88.1
+            args:
+            - -X
+            - POST  
+            - http://ollama:11434/api/generate
+            - -d
+            - '{"model":"llama3.1:8b-instruct-q5_K_M","prompt":"ping","stream":false}'
+            - -H
+            - "Content-Type: application/json"
+          restartPolicy: OnFailure

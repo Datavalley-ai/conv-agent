@@ -2,53 +2,46 @@ const axios = require('axios');
 
 class AIService {
   constructor() {
-    this.ollamaUrl = process.env.OLLAMA_URL || 'https://ollama-234807240886.asia-south1.run.app';
+    // Point to internal wrapper instead of external service
+    this.ollamaUrl = process.env.OLLAMA_URL || 'http://localhost:8081/v1';
     this.model = 'llama3.1:8b-instruct';
+    this.internalKey = process.env.INTERNAL_KEY || '';
   }
   
   async generateInterviewResponse(userMessage, sessionContext = {}) {
-    try {
-      const prompt = this.buildInterviewPrompt(userMessage, sessionContext);
-      
-      console.log('🤖 Sending to Ollama:', this.ollamaUrl);
-      
-      const response = await axios.post(`${this.ollamaUrl}/api/generate`, {
-        model: this.model,
-        prompt: prompt,
-        stream: false,
-        options: {
-          temperature: 0.7,
-          max_tokens: 150,
-          top_p: 0.9
-        }
-      }, {
-        timeout: 10000, // 10 second timeout
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      return response.data.response.trim();
-    } catch (error) {
-      console.error('❌ Ollama AI Service Error:', error.message);
-      
-      // Fallback responses if Ollama fails
-      const fallbackResponses = [
-        "I apologize, but I'm experiencing a technical issue. Could you please repeat that?",
-        "Thank you for sharing. Let me ask you this - what specific challenges did you face in that situation?",
-        "That's interesting. Can you walk me through your thought process on that?",
-        "I see. How would you approach that differently if you encountered it again?"
-      ];
-      
-      return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
-    }
+    const { jobRole = 'General Role', messages = [] } = sessionContext;
+    
+    // Build OpenAI-style messages array
+    const chatMessages = [
+      ...messages,
+      { role: 'user', content: userMessage }
+    ];
+
+    console.log('🤖 Sending to internal wrapper:', this.ollamaUrl);
+    
+    const response = await axios.post(`${this.ollamaUrl}/chat/completions`, {
+      messages: chatMessages,
+      temperature: 0.7,
+      max_tokens: 150,
+      top_p: 0.9
+    }, {
+      timeout: 60000, // 60 second timeout
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${this.internalKey}`
+      }
+    });
+    
+    // Extract content from OpenAI-compatible response
+    return response.data.choices[0].message.content.trim();
   }
   
   buildInterviewPrompt(userMessage, context) {
+    // This method is no longer needed since the wrapper handles prompt building
+    // Keep it for backward compatibility but it won't be used
     const { jobRole = 'General Role', messages = [] } = context;
     
-    // Get recent conversation context
-    const recentMessages = messages.slice(-6); // Last 3 exchanges
+    const recentMessages = messages.slice(-6);
     const conversationHistory = recentMessages
       .map(msg => `${msg.role === 'user' ? 'Candidate' : 'Interviewer'}: ${msg.content}`)
       .join('\n');
@@ -73,8 +66,13 @@ Respond as the Interviewer:`;
   
   async healthCheck() {
     try {
-      const response = await axios.get(`${this.ollamaUrl}/api/tags`, { timeout: 5000 });
-      return { status: 'healthy', models: response.data.models };
+      const response = await axios.get(`${this.ollamaUrl}/healthz`, { 
+        timeout: 5000,
+        headers: {
+          'Authorization': `Bearer ${this.internalKey}`
+        }
+      });
+      return { status: 'healthy', service: 'internal-wrapper' };
     } catch (error) {
       return { status: 'unhealthy', error: error.message };
     }

@@ -23,10 +23,10 @@ const userSchema = new mongoose.Schema({
   },
   // Allow candidate, admin, and interviewer roles
   role: {
-    type: String,
-    enum: ['candidate', 'admin', 'interviewer'],
-    default: 'candidate'
-  },
+  type: String,
+  enum: ['candidate', 'interviewer', 'admin', 'super-admin'], // ✅ Added 'interviewer'
+  default: 'candidate'
+},
   subscription: {
     type: String,
     enum: ['free', 'premium'],
@@ -39,7 +39,11 @@ const userSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now
-  }
+  },
+  lastLogin: {
+  type: Date,
+  default: null
+}
 });
 
 // Hash password before saving
