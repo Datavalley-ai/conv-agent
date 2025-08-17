@@ -5,7 +5,7 @@ module.exports = {
   nodeEnv: process.env.NODE_ENV || 'development',
   jwtSecret: process.env.JWT_SECRET,
   mongodb: {
-    uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interviewer'
+    uri: 'mongodb+srv://ai_interviewer:Hyderabad123**@ai-interviewer-cluster.ctvdlak.mongodb.net/ai-interviewer?retryWrites=true&w=majority'
   },
   redis: {
     uri: process.env.REDIS_URI || 'redis://localhost:6379'

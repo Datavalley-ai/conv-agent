@@ -1,17 +1,19 @@
 const mongoose = require('mongoose');
-const logger = require('../utils/logger');
-const config = require('./index');
+
 
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(config.mongodb.uri, {
-      useUnifiedTopology: true,
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-interviewer';
+    
+console.log("🔍 Debug: Using MongoDB URI:", process.env.MONGODB_URI || "NOT SET");
+    await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
+      useUnifiedTopology: true,
     });
-
-    logger.info(`MongoDB Connected: ${conn.connection.host}`);
+    
+    console.log('✅ MongoDB connected successfully');
   } catch (error) {
-    logger.error('Database connection failed:', error);
+    console.error('❌ MongoDB connection failed:', error.message);
     process.exit(1);
   }
 };

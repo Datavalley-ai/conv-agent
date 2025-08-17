@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interviewer Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="min-h-screen bg-gray-50">
+    
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo and Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="h-10 w-10 bg-indigo-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white text-lg font-bold">🤖</span>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900">AI Interviewer</h1>
+                        <p class="text-sm text-gray-500">Professional Interview Practice</p>
+                    </div>
+                </div>
+
+                <!-- User Profile -->
+                <div class="flex items-center space-x-4">
+                    <div class="text-right">
+                        <p class="text-sm font-medium text-gray-900" id="userName">Welcome back!</p>
+                        <p class="text-xs text-gray-500" id="userEmail">Loading...</p>
+                    </div>
+                    <div class="h-8 w-8 bg-indigo-600 rounded-full flex items-center justify-center">
+                        <span class="text-white text-sm font-medium" id="userInitials">U</span>
+                    </div>
+                    <button id="logoutBtn" class="text-gray-400 hover:text-gray-600 text-sm font-medium">
+                        Logout
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Welcome Section -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-2">Ready for your next interview?</h2>
+            <p class="text-gray-600">Practice with AI-powered mock interviews and improve your skills</p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-2xl font-semibold text-gray-900" id="completedInterviews">0</p>
+                        <p class="text-gray-500">Interviews Completed</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-2xl font-semibold text-gray-900" id="averageScore">0%</p>
+                        <p class="text-gray-500">Average Score</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+                <div class="flex items-center">
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-2xl font-semibold text-gray-900" id="totalTime">0m</p>
+                        <p class="text-gray-500">Practice Time</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            
+            <!-- Start Interview Card -->
+            <div class="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg p-8 text-white">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <h3 class="text-2xl font-bold mb-2">Start New Interview</h3>
+                        <p class="text-indigo-100">Practice with AI-powered questions</p>
+                    </div>
+                    <div class="h-16 w-16 bg-white/20 rounded-lg flex items-center justify-center">
+                        <svg class="h-8 w-8" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                    </div>
+                </div>
+                
+                <!-- Interview Types -->
+                <div class="space-y-3 mb-6">
+                    <button class="interview-type-btn w-full text-left p-3 bg-white/10 hover:bg-white/20 rounded-lg transition duration-200" data-type="technical">
+                        <span class="font-semibold">Technical Interview</span>
+                        <p class="text-sm text-indigo-100">Coding, algorithms, system design</p>
+                    </button>
+                    <button class="interview-type-btn w-full text-left p-3 bg-white/10 hover:bg-white/20 rounded-lg transition duration-200" data-type="behavioral">
+                        <span class="font-semibold">Behavioral Interview</span>
+                        <p class="text-sm text-indigo-100">Leadership, teamwork, problem-solving</p>
+                    </button>
+                    <button class="interview-type-btn w-full text-left p-3 bg-white/10 hover:bg-white/20 rounded-lg transition duration-200" data-type="general">
+                        <span class="font-semibold">General Interview</span>
+                        <p class="text-sm text-indigo-100">Mixed questions, comprehensive practice</p>
+                    </button>
+                </div>
+                
+                <button id="startInterviewBtn" class="w-full py-4 bg-white text-indigo-600 font-semibold rounded-lg hover:bg-gray-50 transition duration-200 transform hover:scale-105">
+                    Start Interview Session
+                </button>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-6">Recent Sessions</h3>
+                
+                <div id="recentSessions" class="space-y-4">
+                    <!-- Sessions will be loaded here -->
+                    <div class="text-center py-8 text-gray-500">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="text-sm">No interview sessions yet</p>
+                        <p class="text-xs text-gray-400">Start your first interview to see history</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tips Section -->
+        <div class="bg-blue-50 rounded-xl p-6 border border-blue-200">
+            <h3 class="text-lg font-semibold text-blue-900 mb-4 flex items-center">
+                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Interview Tips
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                    <div>
+                        <p class="text-blue-800 font-medium">Practice regularly</p>
+                        <p class="text-blue-600 text-sm">Consistent practice improves confidence and performance</p>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div class="flex-shrink-0 w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
+                    <div>
+                        <p class="text-blue-800 font-medium">Use voice mode</p>
+                        <p class="text-blue-600 text-sm">Practice speaking aloud to simulate real interviews</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="/js/dashboard.js"></script>
+    // Add to dashboard.html
+    <script>
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '/signin';
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('jwt');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token) {
+            // Not logged in, redirect to signin
+            window.location.href = '/signin';
+            return;
+        }
+        
+        // User is authenticated, stay on dashboard
+        console.log('Welcome to dashboard:', user.firstName);
+        
+        // Optional: Check if token is expired
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const currentTime = Math.floor(Date.now() / 1000);
+            
+            if (payload.exp < currentTime) {
+            // Token expired, redirect to signin
+            localStorage.clear();
+            window.location.href = '/signin';
+            return;
+            }
+        } catch (error) {
+            // Invalid token, redirect to signin
+            localStorage.clear();
+            window.location.href = '/signin';
+            return;
+        }
+        
+        // Token is valid, continue with dashboard functionality
+        });
+        </script>
+</body>
+</html>

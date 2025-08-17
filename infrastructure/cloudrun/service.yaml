@@ -19,7 +19,7 @@ spec:
     spec:
       containerConcurrency: 100
       containers:
-      - image: asia-south1-docker.pkg.dev/datavalley-383814/dv-ai/interview-gateway:glibc
+      - image: asia-south1-docker.pkg.dev/datavalley-383814/dv-ai/interview-gateway:frontend-fixed
         ports:
         - containerPort: 3000
         env: 

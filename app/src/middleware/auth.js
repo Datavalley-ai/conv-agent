@@ -1,96 +1,127 @@
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 const config = require('../config');
-const logger = require('../utils/logger');
 
-// Generate session binding hash (IP + User Agent)
-function generateSessionBinding(req) {
-  const data = req.ip + (req.headers['user-agent'] || '');
-  return crypto.createHash('sha256').update(data).digest('hex');
-}
-
-// JWT Authentication middleware
 function requireAuth(roles = []) {
   return (req, res, next) => {
     try {
+      // First check for JWT Bearer token
       const authHeader = req.headers.authorization;
       
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({
-          error: 'Unauthorized',
-          message: 'Missing or invalid authorization header'
-        });
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, config.jwtSecret);
+          
+          // Validate required claims per Phase 1 spec
+          if (!decoded.exp || decoded.exp < Math.floor(Date.now() / 1000)) {
+            return res.status(401).json({
+              success: false,
+              error: 'Token expired'
+            });
+          }
+          
+          req.user = {
+            id: decoded.id || decoded.sub,
+            role: decoded.role || decoded.roles,
+            sessionId: decoded.sessionId
+          };
+          
+          // Role-based access control
+          if (roles.length > 0) {
+            const userRole = Array.isArray(req.user.role) ? req.user.role : [req.user.role];
+            const hasRequiredRole = roles.some(role => userRole.includes(role));
+            
+            if (!hasRequiredRole) {
+              return res.status(403).json({
+                success: false,
+                error: 'Insufficient permissions'
+              });
+            }
+          }
+          
+          return next();
+        } catch (jwtError) {
+          // JWT invalid, try Google service account auth
+          console.log('JWT validation failed:', jwtError.message);
+        }
       }
 
-      const token = authHeader.substring(7);
-      
-      // Verify JWT
-      const decoded = jwt.verify(token, config.jwtSecret);
-      
-      // Validate required claims
-      if (!decoded.sub || !decoded.aud || decoded.aud !== 'interview-gateway') {
-        return res.status(401).json({
-          error: 'Invalid Token',
-          message: 'Token missing required claims'
-        });
-      }
-
-      // Role-based access control
-      if (roles.length > 0 && !roles.includes(decoded.roles)) {
-        return res.status(403).json({
-          error: 'Forbidden',
-          message: 'Insufficient permissions'
-        });
-      }
-
-      // Add user info to request
-      req.user = {
-        id: decoded.sub,
-        role: decoded.roles,
-        sessionId: decoded.sessionId
-      };
-
-      next();
-    } catch (error) {
-      logger.error('JWT Auth Error:', error);
-      
-      if (error.name === 'TokenExpiredError') {
-        return res.status(401).json({
-          error: 'Token Expired',
-          message: 'Your session has expired'
-        });
+      // Check for Google service account JWT in x-goog-iap-jwt-assertion header
+      const iapHeader = req.headers['x-goog-iap-jwt-assertion'];
+      if (iapHeader) {
+        try {
+          // Decode without verification (IAP already verified it)
+          const payload = JSON.parse(Buffer.from(iapHeader.split('.')[1], 'base64'));
+          req.user = {
+            id: payload.email || payload.sub,
+            role: 'candidate'
+          };
+          return next();
+        } catch (googleError) {
+          console.log('Google IAP auth failed:', googleError.message);
+        }
       }
       
+      // No valid auth found - return immediately, don't hang
       return res.status(401).json({
-        error: 'Invalid Token',
-        message: 'Token verification failed'
+        success: false,
+        error: 'Unauthorized - No valid authentication token'
+      });
+      
+    } catch (error) {
+      // Global error handler - ensure we always respond
+      console.error('Auth middleware error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Authentication service error'
       });
     }
   };
 }
 
-// Session binding middleware
-function bindSession(req, res, next) {
+// Internal service authentication
+const requireInternalAuth = (req, res, next) => {
   try {
-    const currentBinding = generateSessionBinding(req);
+    const authHeader = req.headers.authorization;
+    const expectedAuth = `Bearer ${process.env.INTERNAL_KEY}`;
     
-    // Add binding to request for later comparison with stored session
-    req.sessionBinding = currentBinding;
+    if (!authHeader || authHeader !== expectedAuth) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'Unauthorized - Invalid internal key' 
+      });
+    }
     
-    // TODO: Compare with stored session binding in database
-    // For now, just pass through
     next();
   } catch (error) {
-    logger.error('Session Binding Error:', error);
-    res.status(500).json({
-      error: 'Session Error',
-      message: 'Failed to validate session binding'
+    console.error('Internal auth error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Internal authentication error'
     });
   }
-}
+};
+
+// Session binding middleware (Phase 1 requirement)
+const bindSession = (req, res, next) => {
+  try {
+    const crypto = require('crypto');
+    const binding = crypto.createHash('sha256')
+      .update((req.ip || 'unknown') + (req.headers['user-agent'] || 'unknown'))
+      .digest('hex');
+    
+    req.sessionBinding = binding;
+    next();
+  } catch (error) {
+    console.error('Session binding error:', error);
+    // Don't fail the request, just log and continue
+    req.sessionBinding = 'fallback-' + Date.now();
+    next();
+  }
+};
 
 module.exports = {
   requireAuth,
-  bindSession,
-  generateSessionBinding
+  requireInternalAuth,
+  bindSession
 };
