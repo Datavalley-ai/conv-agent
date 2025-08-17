@@ -178,6 +178,46 @@
 
     </main>
 
-    <script src="js/dashboard.js"></script>
+    <script src="/js/dashboard.js"></script>
+    // Add to dashboard.html
+    <script>
+        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+            localStorage.clear();
+            window.location.href = '/signin';
+        });
+        document.addEventListener('DOMContentLoaded', () => {
+        const token = localStorage.getItem('jwt');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token) {
+            // Not logged in, redirect to signin
+            window.location.href = '/signin';
+            return;
+        }
+        
+        // User is authenticated, stay on dashboard
+        console.log('Welcome to dashboard:', user.firstName);
+        
+        // Optional: Check if token is expired
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            const currentTime = Math.floor(Date.now() / 1000);
+            
+            if (payload.exp < currentTime) {
+            // Token expired, redirect to signin
+            localStorage.clear();
+            window.location.href = '/signin';
+            return;
+            }
+        } catch (error) {
+            // Invalid token, redirect to signin
+            localStorage.clear();
+            window.location.href = '/signin';
+            return;
+        }
+        
+        // Token is valid, continue with dashboard functionality
+        });
+        </script>
 </body>
 </html>

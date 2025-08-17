@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - DataValley AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+        }
+
+        /* Layout */
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: white;
+            border-right: 1px solid #e2e8f0;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+        }
+
+        .nav-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 0 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 2rem;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-right: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: #f1f5f9;
+            color: #334155;
+        }
+
+        .nav-item.active {
+            background: #f1f5f9;
+            color: #667eea;
+            border-right-color: #667eea;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: between;
+            align-items: center;
+            margin-bottom: 2rem;
+            background: white;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .notification-badge {
+            position: relative;
+            cursor: pointer;
+            padding: 8px;
+            color: #64748b;
+            transition: color 0.2s ease;
+        }
+
+        .notification-badge:hover {
+            color: #334155;
+        }
+
+        .badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #ef4444;
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+        }
+
+        .stat-icon.blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+        .stat-icon.green { background: linear-gradient(135deg, #10b981, #047857); }
+        .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+        .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+        }
+
+        .stat-change.positive {
+            color: #10b981;
+        }
+
+        .stat-change.negative {
+            color: #ef4444;
+        }
+
+        /* Content Sections */
+        .content-section {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 2rem;
+        }
+
+        .section-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th {
+            text-align: left;
+            padding: 1rem 2rem;
+            color: #64748b;
+            font-weight: 500;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        .table td {
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .table tr:hover {
+            background: #f8fafc;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-completed {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <div class="logo-text">Admin Panel</div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Overview</div>
+                <a href="#" class="nav-item active">
+                    <i class="fas fa-chart-pie"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-chart-line"></i>
+                    Analytics
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">Management</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-users"></i>
+                    Users
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-comments"></i>
+                    Conversations
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-clipboard-check"></i>
+                    Assessments
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-microphone"></i>
+                    Speech Logs
+                </a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-title">System</div>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-server"></i>
+                    System Health
+                </a>
+                <a href="#" class="nav-item">
+                    <i class="fas fa-database"></i>
+                    Database
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <h1 class="header-title">Admin Dashboard</h1>
+                <div class="header-actions">
+                    <div class="notification-badge">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge">3</span>
+                    </div>
+                    <div class="user-menu">
+                        <div class="user-avatar">A</div>
+                        <span>Admin</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section" id="usersSection" style="display:none">
+  <div class="section-header">
+    <h2 class="section-title">Users</h2>
+    <button class="btn btn-primary" id="newUserBtn">New User</button>
+  </div>
+
+  <!-- New-User Modal -->
+  <div class="modal hidden" id="newUserModal">
+    <form id="newUserForm">
+      <h3>Create User</h3>
+      <input required name="name" placeholder="Full name">
+      <input required type="email" name="email" placeholder="Email">
+      <input required type="password" name="password" placeholder="Password">
+      <select name="role">
+        <option value="user">User</option>
+        <option value="admin">Admin</option>
+      </select>
+      <button type="submit">Create</button>
+      <button type="button" class="close">Cancel</button>
+    </form>
+  </div>
+
+  <!-- Users Table -->
+  <div class="table-container">
+    <table class="table" id="usersTable">
+      <thead>
+        <tr><th>Name</th><th>Email</th><th>Role</th><th>Created</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Total Users</div>
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">2,847</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i>
+                        12% from last month
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Active Interviews</div>
+                        <div class="stat-icon green">
+                            <i class="fas fa-microphone"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">156</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i>
+                        8% from yesterday
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">Completed Sessions</div>
+                        <div class="stat-icon purple">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">18,420</div>
+                    <div class="stat-change positive">
+                        <i class="fas fa-arrow-up"></i>
+                        24% from last month
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <div class="stat-title">System Performance</div>
+                        <div class="stat-icon orange">
+                            <i class="fas fa-server"></i>
+                        </div>
+                    </div>
+                    <div class="stat-value">99.2%</div>
+                    <div class="stat-change negative">
+                        <i class="fas fa-arrow-down"></i>
+                        0.3% from last week
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Conversations -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">Recent Conversations</h2>
+                    <button class="btn btn-primary">View All</button>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Session ID</th>
+                                <th>User</th>
+                                <th>Duration</th>
+                                <th>Messages</th>
+                                <th>Speech Used</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>interview_1723...</td>
+                                <td>John Doe</td>
+                                <td>15m 32s</td>
+                                <td>24</td>
+                                <td>Yes</td>
+                                <td><span class="status-badge status-completed">Completed</span></td>
+                                <td>2 hours ago</td>
+                            </tr>
+                            <tr>
+                                <td>interview_1723...</td>
+                                <td>Sarah Smith</td>
+                                <td>8m 45s</td>
+                                <td>12</td>
+                                <td>No</td>
+                                <td><span class="status-badge status-active">Active</span></td>
+                                <td>1 hour ago</td>
+                            </tr>
+                            <tr>
+                                <td>interview_1723...</td>
+                                <td>Mike Johnson</td>
+                                <td>22m 18s</td>
+                                <td>31</td>
+                                <td>Yes</td>
+                                <td><span class="status-badge status-completed">Completed</span></td>
+                                <td>3 hours ago</td>
+                            </tr>
+                            <tr>
+                                <td>interview_1723...</td>
+                                <td>Emma Wilson</td>
+                                <td>5m 12s</td>
+                                <td>8</td>
+                                <td>Yes</td>
+                                <td><span class="status-badge status-pending">Pending</span></td>
+                                <td>4 hours ago</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">System Health</h2>
+                    <button class="btn btn-primary">Refresh</button>
+                </div>
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Service</th>
+                                <th>Status</th>
+                                <th>Response Time</th>
+                                <th>Uptime</th>
+                                <th>Last Check</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Conversation API</td>
+                                <td><span class="status-badge status-active">Healthy</span></td>
+                                <td>124ms</td>
+                                <td>99.9%</td>
+                                <td>Just now</td>
+                            </tr>
+                            <tr>
+                                <td>Speech Recognition</td>
+                                <td><span class="status-badge status-active">Healthy</span></td>
+                                <td>89ms</td>
+                                <td>99.8%</td>
+                                <td>30s ago</td>
+                            </tr>
+                            <tr>
+                                <td>Text-to-Speech</td>
+                                <td><span class="status-badge status-active">Healthy</span></td>
+                                <td>156ms</td>
+                                <td>99.7%</td>
+                                <td>1m ago</td>
+                            </tr>
+                            <tr>
+                                <td>Ollama AI Model</td>
+                                <td><span class="status-badge status-active">Healthy</span></td>
+                                <td>2.3s</td>
+                                <td>99.5%</td>
+                                <td>2m ago</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add interactivity here
+        document.addEventListener('DOMContentLoaded', function() {
+            // Navigation active state
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    document.querySelector('.nav-item.active').classList.remove('active');
+                    this.classList.add('active');
+                });
+            });
+
+            // Auto-refresh data every 30 seconds
+            setInterval(() => {
+                console.log('Auto-refreshing dashboard data...');
+                // Add real data fetching logic here
+            }, 30000);
+        });
+    </script>
+    <script>
+const API = '/api/v1/admin/users';
+const token = localStorage.getItem('jwt'); // issued at login
+
+// navigation
+document.querySelector('[data-nav="users"]').addEventListener('click', ()=>{
+  hideSections(); document.getElementById('usersSection').style.display='block';
+  loadUsers();
+});
+
+// fetch users
+async function loadUsers(){
+  const res = await fetch(API,{
+    headers:{Authorization:`Bearer ${token}`}
+  });
+  const users = await res.json();
+  const tbody = document.querySelector('#usersTable tbody');
+  tbody.innerHTML='';
+  users.forEach(u=>{
+    tbody.insertAdjacentHTML('beforeend',
+      `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${new Date(u.createdAt).toLocaleDateString()}</td></tr>`
+    );
+  });
+}
+
+// create user
+document.getElementById('newUserBtn').onclick=()=>{
+  document.getElementById('newUserModal').classList.remove('hidden');
+};
+document.querySelector('#newUserModal .close').onclick=()=>{
+  document.getElementById('newUserModal').classList.add('hidden');
+};
+document.getElementById('newUserForm').onsubmit=async e=>{
+  e.preventDefault();
+  const form = e.target;
+  const payload = Object.fromEntries(new FormData(form));
+  const res = await fetch(API,{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      Authorization:`Bearer ${token}`
+    },
+    body:JSON.stringify(payload)
+  });
+  if(res.ok){
+    loadUsers();
+    form.reset();
+    document.getElementById('newUserModal').classList.add('hidden');
+  }else{
+    alert('Failed: '+(await res.text()));
+  }
+};
+</script>
+
+<script>
+document.getElementById('logoutBtn')?.addEventListener('click', () => {
+    localStorage.clear();
+    window.location.href = '/signin';
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const token = localStorage.getItem('jwt');
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  if (!token) {
+    // Not logged in, redirect to signin
+    window.location.href = '/signin';
+    return;
+  }
+  
+  // Check if user has admin privileges
+  if (user.role !== 'admin' && user.role !== 'super-admin') {
+    // Not authorized for admin, redirect to regular dashboard
+    window.location.href = '/dashboard';
+    return;
+  }
+  
+  // Admin user authenticated, stay on admin dashboard
+  console.log('Welcome to admin dashboard:', user.firstName);
+});
+</script>
+</body>
+</html>

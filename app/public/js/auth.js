@@ -101,8 +101,8 @@ class AuthManager {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                this.storeToken(data.data.token);
-                this.storeUser(data.data.user);
+                this.storeToken(data.token);
+                this.storeUser(data.user);
                 window.location.href = 'dashboard.html';
             } else {
                 this.showError(data.error || 'Login failed');
@@ -135,8 +135,8 @@ class AuthManager {
             const data = await response.json();
 
             if (response.ok && data.success) {
-                this.storeToken(data.data.token);
-                this.storeUser(data.data.user);
+                this.storeToken(data.token);
+                this.storeUser(data.user);
                 window.location.href = 'dashboard.html';
             } else {
                 this.showError(data.error || 'Registration failed');
@@ -149,19 +149,19 @@ class AuthManager {
     }
 
     storeToken(token) {
-        localStorage.setItem('authToken', token);
+        localStorage.setItem('jwt', token);
     }
 
     storeUser(user) {
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        localStorage.setItem('user', JSON.stringify(user));
     }
 
     getToken() {
-        return localStorage.getItem('authToken');
+        return localStorage.getItem('jwt');
     }
 
     getUser() {
-        const user = localStorage.getItem('currentUser');
+        const user = localStorage.getItem('user');
         return user ? JSON.parse(user) : null;
     }
 
