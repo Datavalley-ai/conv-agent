@@ -1,4 +1,4 @@
-// /app/src/models/InterviewSession.js (Final Version with Scheduling)
+// /app/src/models/InterviewSession.js (Updated with Duration)
 
 const mongoose = require('mongoose');
 
@@ -32,21 +32,19 @@ const interviewSessionSchema = new mongoose.Schema(
             ref: 'Job',
             index: true
         },
-        // --- ADDED FOR SCHEDULING ---
         scheduledBy: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'User', // The admin or instructor who created this session
+            ref: 'User',
             required: true
         },
         batchId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: 'Batch', // The batch of users this interview might belong to
+            ref: 'Batch',
             index: true
         },
-        // --- END ADDITIONS ---
 
         /* ——— Basic context ——— */
-        interviewType: { // e.g., "Behavioral Round 1", "Technical Deep Dive"
+        interviewType: {
              type: String,
              required: true
         },
@@ -60,6 +58,12 @@ const interviewSessionSchema = new mongoose.Schema(
             enum: ['junior', 'mid', 'senior'],
             default: 'mid'
         },
+        // --- THIS IS THE NEW FIELD ---
+        durationMinutes: {
+            type: Number,
+            default: 20 // Default to a 20-minute interview
+        },
+        // --- END OF NEW FIELD ---
 
         /* ——— Lifecycle ——— */
         status: {
@@ -75,7 +79,6 @@ const interviewSessionSchema = new mongoose.Schema(
         /* ——— Conversation History ——— */
         messages: [messageSchema],
 
-        // --- REFACTORED FOR CLARITY ---
         /* ——— AI-Generated Feedback ——— */
         feedback: {
             summary: String,
@@ -84,9 +87,7 @@ const interviewSessionSchema = new mongoose.Schema(
             areasForImprovement: [String],
             generatedAt: { type: Date, default: Date.now }
         },
-        // --- END REFACTOR ---
         
-        // --- RENAMED TO FIX WARNING ---
         /* ——— Error Tracking ——— */
         errorLog: [{
             timestamp: { type: Date, default: Date.now },
@@ -94,7 +95,6 @@ const interviewSessionSchema = new mongoose.Schema(
             errorMessage: String,
             stackTrace: String
         }]
-        // --- END RENAME ---
     },
     { timestamps: true }
 );

@@ -18,11 +18,12 @@ const auth = require('../../../middleware/auth');
 
 // Import the authentication middleware
 router.get('/my-sessions', auth, getMyScheduledInterviews);
-router.post('/start', auth, startInterview);
-router.post('/:sessionId/start-scheduled', auth, startScheduledInterview);
 router.get('/:sessionId', auth, getInterviewSession);
+router.post('/:sessionId/start-scheduled', auth, startScheduledInterview);
 router.post('/:sessionId/answer', auth, submitAnswer);
 router.post('/:sessionId/end', auth, endInterview);
+
+router.post('/start', auth, startInterview);
 
 
 module.exports = router;

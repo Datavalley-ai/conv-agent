@@ -41,9 +41,10 @@ stringData:
 
   # These were already correct
   JWT_SECRET: "e565bff47eb5a2ccc5f6d13645579d03e37bad51f81d356081db4fd3cee93ee4"
-  MONGODB_URI: "mongodb+srv://ai_interviewer:Hyderabad123**@ai-interviewer-cluster.ctvdlak.mongodb.net/ai-interviewer-db?retryWrites=true&w=majority"
+  MONGODB_URI: "mongodb+srv://ai-interviewer:Hyderabad123@ai-interviewer-cluster.ctvdlak.mongodb.net/ai-interviewer-db?retryWrites=true&w=majority"
   OPENAI_API_KEY: "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"
   ASSEMBLYAI_API_KEY: "2c829b4e2cfe405da5c2a1cd45cb8b75"
+
 
 ---
 # ===============================================================
@@ -69,7 +70,7 @@ spec:
     spec:
       containers:
       - name: ai-interviewer
-        image: asia-south1-docker.pkg.dev/datavalley-383814/ai-interviewer/ai-interviewer:v0.1.18
+        image: asia-south1-docker.pkg.dev/datavalley-383814/ai-interviewer/ai-interviewer:v0.1.5
         ports:
         - containerPort: 8081
         env:
@@ -124,13 +125,13 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: /api/v1/admin/healthcheck
+            path: /health
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
-            path: /api/v1/admin/healthcheck
+            path: /health
             port: 8081
           initialDelaySeconds: 10
           periodSeconds: 10
