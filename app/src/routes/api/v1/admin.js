@@ -9,6 +9,10 @@ const requireRole = require('../../../middleware/role');
 const interviewAdminRoutes = require('./admin/interviewRoutes');
 
 
+router.get('/healthcheck', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Admin service is healthy.' });
+});
+
 // Import sub-routers for specific admin functionalities (we will create these next)
 // const interviewAdminRoutes = require('./admin/interviewRoutes');
 // const userAdminRoutes = require('./admin/userRoutes');
