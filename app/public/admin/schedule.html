@@ -6,8 +6,10 @@
     <title>Schedule Interview - Admin</title>
 
     <script src="/js/authGuard.js"></script>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
     <link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
@@ -31,12 +33,11 @@
             </div>
 
             <form id="scheduleForm" class="admin-form">
-                
-                <div class="input-group autocomplete-container">
-                    <label for="candidateEmail">Candidate's Email Address</label>
-                    <input type="email" id="candidateEmail" name="candidateEmail" placeholder="Start typing candidate's email..." required autocomplete="off">
-                    <div id="userSuggestions" class="suggestions-list hidden"></div>
+                <div class="input-group">
+                    <label for="candidateId">Candidate User ID</label>
+                    <input type="text" id="candidateId" name="candidateId" placeholder="Enter the candidate's MongoDB user ID" required>
                 </div>
+
                 <div class="input-group">
                     <label for="interviewType">Interview Type / Title</label>
                     <input type="text" id="interviewType" name="interviewType" placeholder="e.g., Python Backend - Round 1" required>
@@ -56,11 +57,6 @@
                             <option value="senior">Senior</option>
                         </select>
                     </div>
-                    
-                    <div class="input-group">
-                        <label for="durationMinutes">Duration (Minutes)</label>
-                        <input type="number" id="durationMinutes" name="durationMinutes" value="20" required>
-                    </div>
                     <div class="input-group">
                         <label for="sessionDeadline">Completion Deadline (Optional)</label>
                         <input type="datetime-local" id="sessionDeadline" name="sessionDeadline">
@@ -76,7 +72,6 @@
         </div>
     </main>
 
-    <script src="/js/apiClient.js"></script>
     <script src="/js/admin-schedule.js" defer></script>
 </body>
 </html>
