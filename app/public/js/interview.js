@@ -1,177 +1,258 @@
-class InterviewSession {
-    constructor() {
-        this.sessionId = this.getSessionId();
-        this.messages = [];
-        this.isActive = true;
-        this.startTime = new Date();
-        this.init();
-    }
-    
-    init() {
-        if (!this.sessionId) {
-            this.showError('No interview session found. Please start from the dashboard.');
+// /app/public/js/interview.js
+
+document.addEventListener('DOMContentLoaded', () => {
+    // --- State Management ---
+    const AppState = {
+        sessionId: null,
+        authToken: null,
+        isRecording: false,
+        isAISpeaking: false,
+        mediaRecorder: null,
+        audioChunks: [],
+        currentAudio: null,
+    };
+
+    // --- DOM Element Selections ---
+    const elements = {
+        messagesContainer: document.getElementById('messagesContainer'),
+        responseInput: document.getElementById('responseInput'),
+        sendButton: document.getElementById('sendButton'),
+        voiceButton: document.getElementById('voiceButton'),
+        endInterviewButton: document.getElementById('endInterviewButton'),
+        voiceActivityOverlay: document.getElementById('voiceActivityOverlay'),
+        voiceStatusText: document.getElementById('voiceStatusText'),
+        interviewTitle: document.getElementById('interviewTitle'),
+    };
+
+    // --- Core Functions ---
+
+    const init = async () => {
+        AppState.authToken = localStorage.getItem('authToken');
+        const params = new URLSearchParams(window.location.search);
+        AppState.sessionId = params.get('session');
+
+        if (!AppState.sessionId || !AppState.authToken) {
+            alert('Error: Session ID or authentication token is missing. Redirecting to dashboard.');
+            window.location.href = '/dashboard.html';
             return;
         }
-        
-        this.setupEventListeners();
-        this.startSession();
-        this.startTimer();
-    }
-    
-    setupEventListeners() {
-        document.getElementById('sendResponse').addEventListener('click', () => {
-            this.sendUserMessage();
-        });
-        
-        document.getElementById('responseInput').addEventListener('keypress', (e) => {
+
+        setupEventListeners();
+        initVoice(); // This will now be fully implemented
+        fetchInitialInterviewState();
+    };
+
+    const setupEventListeners = () => {
+        elements.sendButton.addEventListener('click', handleSendMessage);
+        elements.responseInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                this.sendUserMessage();
+                handleSendMessage();
             }
         });
-    }
-    
-    async startSession() {
-        try {
-            document.getElementById('interviewType').textContent = 'Starting...';
-            
-            const response = await fetch(`/api/v1/interview/${this.sessionId}/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.getToken()}`
-                },
-                body: JSON.stringify({
-                    message: 'START_INTERVIEW',
-                    type: 'system'
-                })
-            });
-            
-            const data = await response.json();
-            if (data.success) {
-                document.getElementById('interviewType').textContent = 'Interview Active';
-                this.clearMessages();
-                this.addMessage('ai', data.response);
-            } else {
-                this.showError('Failed to start interview: ' + data.error);
-            }
-        } catch (error) {
-            console.error('Error starting session:', error);
-            this.showError('Failed to connect to interview service.');
-        }
-    }
-    
-    async sendUserMessage() {
-        const input = document.getElementById('responseInput');
-        const message = input.value.trim();
-        
-        if (!message) return;
-        
-        // Clear input and add user message
-        input.value = '';
-        this.addMessage('user', message);
-        
-        // Show typing indicator
-        this.showTyping();
-        
-        try {
-            const response = await fetch(`/api/v1/interview/${this.sessionId}/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.getToken()}`
-                },
-                body: JSON.stringify({
-                    message: message,
-                    type: 'user'
-                })
-            });
-            
-            const data = await response.json();
-            this.hideTyping();
-            
-            if (data.success) {
-                this.addMessage('ai', data.response);
-            } else {
-                this.showError('Failed to send message: ' + data.error);
-            }
-        } catch (error) {
-            this.hideTyping();
-            console.error('Error sending message:', error);
-            this.showError('Failed to send message. Please try again.');
-        }
-    }
-    
-    addMessage(sender, content) {
+        elements.endInterviewButton.addEventListener('click', handleEndInterview);
+        elements.voiceButton.addEventListener('click', toggleRecording);
+    };
+
+    // --- DOM Manipulation ---
+
+    const renderMessages = (messages) => {
+        elements.messagesContainer.innerHTML = '';
+        messages.forEach(msg => addMessageToDOM(msg.role, msg.content));
+    };
+
+    const addMessageToDOM = (role, content) => {
         const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${sender}-message`;
-        messageDiv.innerHTML = `
-            <div class="message-content">${this.escapeHtml(content)}</div>
-            <div class="message-time">${new Date().toLocaleTimeString()}</div>
-        `;
+        messageDiv.className = `message ${role === 'assistant' ? 'ai-message' : 'user-message'}`;
         
-        const container = document.getElementById('messagesContainer');
-        container.appendChild(messageDiv);
-        container.scrollTop = container.scrollHeight;
-    }
-    
-    showTyping() {
-        const typingDiv = document.createElement('div');
-        typingDiv.id = 'typingIndicator';
-        typingDiv.className = 'message ai-message';
-        typingDiv.innerHTML = '<div class="message-content">AI is typing...</div>';
-        document.getElementById('messagesContainer').appendChild(typingDiv);
-    }
-    
-    hideTyping() {
-        const typing = document.getElementById('typingIndicator');
-        if (typing) {
-            typing.remove();
+        const bubble = document.createElement('div');
+        bubble.className = 'message-bubble';
+        bubble.innerHTML = `<p>${content.replace(/\n/g, '<br>')}</p>`;
+        
+        messageDiv.appendChild(bubble);
+        elements.messagesContainer.appendChild(messageDiv);
+        elements.messagesContainer.scrollTop = elements.messagesContainer.scrollHeight;
+    };
+
+    // --- API Communication ---
+
+    const fetchInitialInterviewState = async () => {
+        try {
+            const response = await fetch(`/api/v1/interview/${AppState.sessionId}`, {
+                headers: { 'Authorization': `Bearer ${AppState.authToken}` }
+            });
+            if (!response.ok) throw new Error('Could not fetch interview session.');
+            
+            const session = await response.json();
+            elements.interviewTitle.textContent = session.jobRole;
+            renderMessages(session.messages);
+            playAIAudio(session.messages[session.messages.length - 1].content);
+
+        } catch (error) {
+            console.error(error);
+            addMessageToDOM('assistant', `Error: ${error.message}. Please try refreshing.`);
         }
-    }
+    };
     
-    clearMessages() {
-        document.getElementById('messagesContainer').innerHTML = '';
-    }
-    
-    showError(message) {
-        this.addMessage('ai', `Error: ${message}`);
-    }
-    
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-    
-    startTimer() {
-        setInterval(() => {
-            const elapsed = Math.floor((new Date() - this.startTime) / 1000);
-            const minutes = Math.floor(elapsed / 60);
-            const seconds = elapsed % 60;
-            document.getElementById('timer').textContent = 
-                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }, 1000);
-    }
-    
-    getSessionId() {
-        const params = new URLSearchParams(window.location.search);
-        return params.get('session') || localStorage.getItem('currentSessionId');
-    }
-    
-    getToken() {
-        return localStorage.getItem('authToken');
-    }
-}
+    const handleSendMessage = async () => {
+        const answer = elements.responseInput.value.trim();
+        if (!answer || elements.sendButton.disabled) return;
 
-// Global function for end interview button
-function endInterview() {
-    if (confirm('Are you sure you want to end this interview?')) {
-        window.location.href = 'dashboard.html';
-    }
-}
+        addMessageToDOM('user', answer);
+        elements.responseInput.value = '';
+        elements.sendButton.disabled = true;
 
-// Initialize interview session when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    new InterviewSession();
+        try {
+            const response = await fetch(`/api/v1/interview/${AppState.sessionId}/answer`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AppState.authToken}`
+                },
+                body: JSON.stringify({ answer })
+            });
+
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message);
+
+            addMessageToDOM('assistant', result.nextQuestion);
+            await playAIAudio(result.nextQuestion);
+
+        } catch (error) {
+            addMessageToDOM('assistant', `Sorry, an error occurred: ${error.message}`);
+        } finally {
+            elements.sendButton.disabled = false;
+        }
+    };
+
+    const handleEndInterview = async () => {
+        if (AppState.currentAudio) AppState.currentAudio.pause();
+        if (confirm('Are you sure you want to end this interview?')) {
+            try {
+                const response = await fetch(`/api/v1/interview/${AppState.sessionId}/end`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${AppState.authToken}` }
+                });
+                if (!response.ok) throw new Error('Failed to end the session.');
+                
+                alert('Interview ended successfully! You will now be taken to the results page.');
+                window.location.href = `/results.html?session=${AppState.sessionId}`;
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+    };
+    
+    // --- Voice Handling ---
+
+    const initVoice = async () => {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.warn('Microphone access is not supported by this browser.');
+            elements.voiceButton.disabled = true;
+            return;
+        }
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            AppState.mediaRecorder = new MediaRecorder(stream);
+            AppState.mediaRecorder.ondataavailable = e => AppState.audioChunks.push(e.data);
+            AppState.mediaRecorder.onstop = () => {
+                const audioBlob = new Blob(AppState.audioChunks, { type: 'audio/webm' });
+                transcribeAudio(audioBlob);
+            };
+        } catch (err) {
+            console.error('Microphone access denied:', err);
+            elements.voiceButton.disabled = true;
+            alert('Microphone access is required for audio features. Please enable it in your browser settings.');
+        }
+    };
+
+    const toggleRecording = () => {
+        if (AppState.isRecording) {
+            AppState.mediaRecorder.stop();
+        } else {
+            if (AppState.currentAudio) AppState.currentAudio.pause();
+            AppState.audioChunks = [];
+            AppState.mediaRecorder.start();
+        }
+        AppState.isRecording = !AppState.isRecording;
+        updateUIAfterRecordingToggle();
+    };
+    
+    const updateUIAfterRecordingToggle = () => {
+        elements.voiceButton.classList.toggle('recording', AppState.isRecording);
+        if (AppState.isRecording) {
+            showVoiceActivity('Listening...');
+        } else {
+            showVoiceActivity('Processing...');
+        }
+    };
+
+    const transcribeAudio = async (audioBlob) => {
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.webm');
+        try {
+            const response = await fetch('/api/v1/speech/transcribe', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${AppState.authToken}` },
+                body: formData
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Transcription failed.');
+            
+            elements.responseInput.value = result.transcript;
+            await handleSendMessage(); // Auto-send the transcribed message
+        } catch (error) {
+            console.error('Transcription error:', error);
+            elements.responseInput.value = `[Error: Could not transcribe audio. Please type your answer.]`;
+        } finally {
+            hideVoiceActivity();
+        }
+    };
+
+    const playAIAudio = async (text) => {
+        if (AppState.isRecording) return; // Don't speak while user is recording
+        
+        try {
+            showVoiceActivity('AI is speaking...', true);
+            const response = await fetch('/api/v1/speech/synthesize', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${AppState.authToken}`
+                },
+                body: JSON.stringify({ text })
+            });
+            if (!response.ok) throw new Error('Could not synthesize audio.');
+            
+            const audioBlob = await response.blob();
+            const audioUrl = URL.createObjectURL(audioBlob);
+            AppState.currentAudio = new Audio(audioUrl);
+            AppState.currentAudio.play();
+            
+            AppState.currentAudio.onended = () => {
+                hideVoiceActivity();
+                URL.revokeObjectURL(audioUrl);
+                AppState.currentAudio = null;
+            };
+        } catch (error) {
+            console.error('Synthesis error:', error);
+            hideVoiceActivity();
+        }
+    };
+
+    const showVoiceActivity = (text, isAI = false) => {
+        elements.voiceStatusText.textContent = text;
+        elements.voiceActivityOverlay.classList.add('visible');
+        if (isAI) {
+            elements.voiceActivityOverlay.querySelector('.voice-activity-indicator').classList.add('ai-speaking');
+        }
+    };
+
+    const hideVoiceActivity = () => {
+        elements.voiceActivityOverlay.classList.remove('visible');
+        elements.voiceActivityOverlay.querySelector('.voice-activity-indicator').classList.remove('ai-speaking');
+    };
+
+    // --- Start the Application ---
+    init();
 });

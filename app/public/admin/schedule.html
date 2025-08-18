@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Interview - Admin</title>
+
+    <script src="/js/authGuard.js"></script>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <header class="main-header">
+        <a href="/admin/dashboard.html" class="logo">
+            <div class="logo-icon"><i class="fas fa-user-shield"></i></div>
+            <span class="logo-text">DataValley Admin</span>
+        </a>
+        <nav class="main-nav">
+            <button id="logoutButton" class="cta-button secondary-button">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </nav>
+    </header>
+
+    <main class="admin-container">
+        <div class="admin-card">
+            <div class="admin-header">
+                <h1><i class="fas fa-calendar-plus"></i> Schedule New Interview</h1>
+                <p>Assign a new interview session to a registered candidate.</p>
+            </div>
+
+            <form id="scheduleForm" class="admin-form">
+                <div class="input-group">
+                    <label for="candidateId">Candidate User ID</label>
+                    <input type="text" id="candidateId" name="candidateId" placeholder="Enter the candidate's MongoDB user ID" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="interviewType">Interview Type / Title</label>
+                    <input type="text" id="interviewType" name="interviewType" placeholder="e.g., Python Backend - Round 1" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="jobRole">Job Role</label>
+                    <input type="text" id="jobRole" name="jobRole" placeholder="e.g., Senior Software Engineer" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="difficulty">Difficulty</label>
+                        <select id="difficulty" name="difficulty">
+                            <option value="junior">Junior</option>
+                            <option value="mid" selected>Mid-level</option>
+                            <option value="senior">Senior</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="sessionDeadline">Completion Deadline (Optional)</label>
+                        <input type="datetime-local" id="sessionDeadline" name="sessionDeadline">
+                    </div>
+                </div>
+
+                <button type="submit" class="cta-button primary-button">
+                    <span id="button-text">Schedule Interview</span>
+                    <div class="spinner hidden" id="spinner"></div>
+                </button>
+            </form>
+            <div id="form-message" class="form-message hidden"></div>
+        </div>
+    </main>
+
+    <script src="/js/admin-schedule.js" defer></script>
+</body>
+</html>
