@@ -69,7 +69,7 @@ spec:
     spec:
       containers:
       - name: ai-interviewer
-        image: asia-south1-docker.pkg.dev/datavalley-383814/ai-interviewer/ai-interviewer:v0.1.13
+        image: asia-south1-docker.pkg.dev/datavalley-383814/ai-interviewer/ai-interviewer:v0.1.18
         ports:
         - containerPort: 8081
         env:
@@ -124,13 +124,13 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: /v1/healthz
+            path: /api/v1/admin/healthcheck
             port: 8081
           initialDelaySeconds: 5
           periodSeconds: 10
         livenessProbe:
           httpGet:
-            path: /health
+            path: /api/v1/admin/healthcheck
             port: 8081
           initialDelaySeconds: 10
           periodSeconds: 10
@@ -170,10 +170,15 @@ metadata:
   name: ai-interviewer-public
   namespace: ai
 spec:
-  selector:
-    app: ai-interviewer
   type: LoadBalancer
+  selector:
+    app: ai-interviewer-edge  # <-- THE FIX: Points to your Nginx proxy pods
   ports:
-  - protocol: TCP
+  - name: http
     port: 80
-    targetPort: 8081
+    protocol: TCP
+    targetPort: 80         # <-- THE FIX: Nginx listens on port 80
+  - name: https
+    port: 443
+    protocol: TCP
+    targetPort: 443        # <-- THE FIX: Nginx listens on port 443
