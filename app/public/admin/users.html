@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management - Admin</title>
+
+    <script src="/js/authGuard.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+    <header class="main-header">
+        <a href="/admin/dashboard.html" class="logo">
+            <div class="logo-icon"><i class="fas fa-user-shield"></i></div>
+            <span class="logo-text">DataValley Admin</span>
+        </a>
+        <nav class="main-nav">
+            <button id="logoutButton" class="cta-button secondary-button">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
+        </nav>
+    </header>
+
+    <main class="admin-container">
+        <div class="admin-table-container">
+            <div class="admin-header">
+                <h1><i class="fas fa-users"></i> User Management</h1>
+                
+                <div class="search-container">
+                    <i class="fas fa-search"></i>
+                    <input type="search" id="userSearchInput" placeholder="Search by name or email...">
+                </div>
+                <button id="addUserBtn" class="cta-button primary-button">
+                    <i class="fas fa-plus"></i> Add New User
+                </button>
+            </div>
+            
+            <table class="user-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody">
+                    <tr><td colspan="5" class="loading-text">Loading users...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="userModal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <form id="userForm">
+                <h2 id="modalTitle">Add New User</h2>
+                <input type="hidden" id="userId" name="userId">
+                
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="firstName">First Name</label>
+                        <input type="text" id="firstName" name="firstName" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="lastName">Last Name</label>
+                        <input type="text" id="lastName" name="lastName" required>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" placeholder="Leave blank to keep unchanged">
+                </div>
+                <div class="input-group">
+                    <label for="role">Role</label>
+                    <select id="role" name="role">
+                        <option value="candidate">Candidate</option>
+                        <option value="interviewer">Interviewer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" id="cancelBtn" class="cta-button secondary-button">Cancel</button>
+                    <button type="submit" class="cta-button primary-button">Save User</button>
+                </div>
+                <div id="modal-message" class="form-message hidden"></div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="/js/admin-users.js" defer></script>
+</body>
+</html>

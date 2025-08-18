@@ -1,17 +1,17 @@
-// /app/src/controllers/authController.js
+// /app/src/controllers/authController.js (Updated)
 
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
-const generateToken = (id, name) => {
-    return jwt.sign({ id, name }, process.env.JWT_SECRET, {
+// Updated to include 'role' in the JWT payload
+const generateToken = (id, name, role) => {
+    return jwt.sign({ id, name, role }, process.env.JWT_SECRET, {
         expiresIn: '12h',
     });
 };
 
 exports.register = async (req, res, next) => {
     try {
-        // Now expecting separate firstName and lastName
         const { firstName, lastName, email, password } = req.body;
 
         if (!firstName || !lastName || !email || !password) {
@@ -23,7 +23,6 @@ exports.register = async (req, res, next) => {
             return res.status(409).json({ message: 'An account with this email already exists.' });
         }
 
-        // Create the new user with the correct fields, removing the name-splitting logic
         const newUser = await User.create({
             firstName,
             lastName,
@@ -31,11 +30,13 @@ exports.register = async (req, res, next) => {
             password,
         });
 
-        const token = generateToken(newUser._id, newUser.firstName);
+        // Pass the new user's default role ('candidate') to the token
+        const token = generateToken(newUser._id, newUser.firstName, newUser.role);
 
+        // Also return the role in the response body for consistency
         res.status(201).json({
             token,
-            user: { id: newUser._id, name: newUser.firstName, email: newUser.email },
+            user: { id: newUser._id, name: newUser.firstName, email: newUser.email, role: newUser.role },
         });
 
     } catch (error) {
@@ -57,12 +58,16 @@ exports.login = async (req, res, next) => {
             return res.status(401).json({ message: 'Invalid email or password.' });
         }
         
-        const token = generateToken(user._id, user.firstName);
+        // --- THIS IS THE FIX ---
+        // 1. Pass the user's role to the token generation function.
+        const token = generateToken(user._id, user.firstName, user.role);
 
         res.status(200).json({
             token,
-            user: { id: user._id, name: user.firstName, email: user.email },
+            // 2. Add the user's role to the response object.
+            user: { id: user._id, name: user.firstName, email: user.email, role: user.role },
         });
+        // --- END OF FIX ---
 
     } catch (error) {
         next(error);
