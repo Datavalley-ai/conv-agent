@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateWelcomeMessage();
         fetchAndDisplayScheduledInterviews();
     };
+    
 
     /**
      * Sets up event listeners for interactive elements.
@@ -25,8 +26,63 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.location.href = '/signin.html';
             });
         }
+
+    if (interviewsListContainer) {
+            interviewsListContainer.addEventListener('click', handleStartInterviewClick);
+        }
     };
 
+    // --- CHANGE #3: New handler function to activate the interview ---
+    /**
+     * Handles the click event on a "Start Now" button.
+     * @param {Event} e The click event object.
+     */
+    const handleStartInterviewClick = async (e) => {
+        // Check if the clicked element is a start button
+        if (!e.target.matches('.start-interview-btn, .start-interview-btn *')) {
+            return;
+        }
+        
+        // Find the actual button element in case the icon was clicked
+        const startButton = e.target.closest('.start-interview-btn');
+        if (!startButton) return;
+
+        const sessionId = startButton.dataset.sessionId;
+        const token = localStorage.getItem('authToken');
+
+        if (!sessionId || !token) {
+            alert('Error: Could not find session ID or authentication token.');
+            return;
+        }
+
+        try {
+            // Disable the button to prevent multiple clicks
+            startButton.disabled = true;
+            startButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Starting...';
+            
+            // Call the new activation endpoint
+            const response = await fetch(`/api/v1/interview/${sessionId}/start-scheduled`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to start the interview session.');
+            }
+            
+            // On success, redirect to the interview page
+            window.location.href = `/interview.html?session=${sessionId}`;
+
+        } catch (error) {
+            console.error('Error starting interview:', error);
+            alert(`An error occurred: ${error.message}`);
+            startButton.disabled = false; // Re-enable the button on error
+            startButton.innerHTML = '<i class="fas fa-play"></i> Start Now';
+        }
+    };
+
+    
     /**
      * Fetches scheduled interviews from the API and renders them.
      */
@@ -71,21 +127,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? new Date(session.sessionDeadline).toLocaleString() 
                 : 'No deadline';
 
+            // --- CHANGE #1: The <a> tag is now a <button> with a data attribute ---
             interviewCard.innerHTML = `
                 <div class="interview-info">
                     <h3 class="interview-title">${session.interviewType}</h3>
                     <p class="interview-details">For role: ${session.jobRole}</p>
                     <p class="interview-deadline">Complete by: ${deadline}</p>
                 </div>
-                <a href="/interview.html?session=${session._id}" class="cta-button primary-button">
+                <button data-session-id="${session._id}" class="cta-button primary-button start-interview-btn">
                     <i class="fas fa-play"></i> Start Now
-                </a>
+                </button>
             `;
             interviewsListContainer.appendChild(interviewCard);
         });
     };
 
-    /**
+     /**
      * Renders an error message in the list container.
      * @param {string} message - The error message to display.
      */

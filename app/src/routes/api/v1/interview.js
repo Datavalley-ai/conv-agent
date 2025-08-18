@@ -9,17 +9,20 @@ const {
     getInterviewSession,
     submitAnswer,
     endInterview,
-    getMyScheduledInterviews
+    getMyScheduledInterviews,
+    startScheduledInterview // <-- Import the new function
+    
 } = require('../../../controllers/interviewController');
 
-// Import the authentication middleware
 const auth = require('../../../middleware/auth');
 
+// Import the authentication middleware
+router.get('/my-sessions', auth, getMyScheduledInterviews);
 router.post('/start', auth, startInterview);
+router.post('/:sessionId/start-scheduled', auth, startScheduledInterview);
 router.get('/:sessionId', auth, getInterviewSession);
 router.post('/:sessionId/answer', auth, submitAnswer);
 router.post('/:sessionId/end', auth, endInterview);
-router.get('/my-sessions', auth, getMyScheduledInterviews);
 
 
 module.exports = router;
