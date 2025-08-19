@@ -14,11 +14,14 @@ const requireRole = (...allowedRoles) => {
         }
 
         const userRole = req.user.role;
+        logger.info(`ROLE CHECK: User ID [${req.user.id}] with role [${userRole}] is trying to access a route that requires one of [${allowedRoles.join(', ')}]`);
 
         // Check if the user's role is in the list of allowed roles for this route.
         if (allowedRoles.includes(userRole)) {
+            logger.info(`ROLE CHECK: Access GRANTED for user [${req.user.id}].`);
             next(); // Role is allowed, proceed to the next handler.
         } else {
+            logger.warn(`ROLE CHECK: Access DENIED for user [${req.user.id}]. Role [${userRole}] is not in [${allowedRoles.join(', ')}].`);
             // Role is not allowed, send a 'Forbidden' error.
             res.status(403).json({ message: 'Forbidden: You do not have the required permissions.' });
         }

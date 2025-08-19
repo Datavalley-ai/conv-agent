@@ -10,11 +10,13 @@ const logger = require('./utils/logger');
 const connectDB = require('./config/database');
 const { errorHandler, notFound } = require('./middleware/error');
 
-// --- Route Imports (Each variable is declared only ONCE) ---
+// --- Route Imports ---
 const authRoutes = require('./routes/api/v1/auth');
 const interviewRoutes = require('./routes/api/v1/interview');
 const speechRoutes = require('./routes/api/v1/speech');
 const adminRoutes = require('./routes/api/v1/admin');
+const userRoutes = require('./routes/api/v1/userRoutes'); 
+
 
 // --- Application Initialization ---
 const app = express();
@@ -24,6 +26,11 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// --- Frontend Static File Serving ---
+// MOVED HERE: This must come before your API routes.
+// This tells Express to look in the 'public' folder for any matching files first.
+app.use(express.static(path.join(__dirname, '../public')));
 
 app.use((req, res, next) => {
     logger.info(`${req.method} ${req.originalUrl}`);
@@ -40,16 +47,18 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/interview', interviewRoutes);
 app.use('/api/v1/speech', speechRoutes);
 app.use('/api/v1/admin', adminRoutes);
-
-// --- Frontend Static File Serving ---
-app.use(express.static(path.join(__dirname, '../public')));
+app.use('/api/v1/users', userRoutes); 
 
 // --- Frontend Page Routes ---
-app.get(['/signin', '/signup', '/dashboard', '/interview', '/results', '/admin/dashboard', '/admin/schedule', '/admin/users'], (req, res) => {
+// This handles serving your HTML pages for different browser routes.
+app.get(['/', '/signin', '/signup', '/dashboard', '/interview', '/results', '/admin/dashboard', '/admin/schedule', '/admin/users', '/admin/groups'], (req, res) => {
+    // Basic security to prevent path traversal
     if (req.path.includes('..')) {
         return res.status(400).send('Invalid path');
     }
-    res.sendFile(path.join(__dirname, `../public${req.path}.html`));
+    // Handle the root path to serve index.html
+    const page = req.path === '/' ? '/index' : req.path;
+    res.sendFile(path.join(__dirname, `../public${page}.html`));
 });
 
 // --- Error Handling Middleware ---

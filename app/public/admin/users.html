@@ -28,13 +28,37 @@
             <div class="admin-header">
                 <h1><i class="fas fa-users"></i> User Management</h1>
                 
-                <div class="search-container">
-                    <i class="fas fa-search"></i>
-                    <input type="search" id="userSearchInput" placeholder="Search by name or email...">
+                <div class="admin-filters">
+                    <div class="search-container">
+                        <i class="fas fa-search"></i>
+                        <input type="search" id="userSearchInput" placeholder="Search by name or email...">
+                    </div>
+                    <select id="roleFilter">
+                        <option value="">All Roles</option>
+                        <option value="candidate">Candidate</option>
+                        <option value="interviewer">Interviewer</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <div class="input-group">
+                        <label for="accountStatus">Account Status</label>
+                        <select id="accountStatus" name="accountStatus">
+                            <option value="active">Active</option>
+                            <option value="pending_verification">Pending Verification</option>
+                            <option value="deactivated">Deactivated</option>
+                            <option value="banned">Banned</option>
+                        </select>
+                    </div>
+                    <select id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="pending_verification">Pending</option>
+                        <option value="deactivated">Deactivated</option>
+                        <option value="banned">Banned</option>
+                    </select>
+                    <button id="addUserBtn" class="cta-button primary-button">
+                        <i class="fas fa-plus"></i> Add New User
+                    </button>
                 </div>
-                <button id="addUserBtn" class="cta-button primary-button">
-                    <i class="fas fa-plus"></i> Add New User
-                </button>
             </div>
             
             <table class="user-table">
@@ -43,12 +67,14 @@
                         <th>Name</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Status</th>
                         <th>Created At</th>
+                        <th>Last Login</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="userTableBody">
-                    <tr><td colspan="5" class="loading-text">Loading users...</td></tr>
+                    <tr><td colspan="7" class="loading-text">Loading users...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -96,6 +122,7 @@
         </div>
     </div>
     
+    <script src="/js/apiClient.js" defer></script> 
     <script src="/js/admin-users.js" defer></script>
 </body>
 </html>

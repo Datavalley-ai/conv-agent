@@ -4,12 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - DataValley AI</title>
-
     <script src="/js/authGuard.js"></script>
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
+    <link rel="stylesheet" href="/css/main.css"> 
     <link rel="stylesheet" href="/css/dashboard.css">
 </head>
 <body>
@@ -26,28 +24,147 @@
             <span class="logo-text">DataValley AI</span>
         </a>
         <nav class="main-nav">
-            <button id="logoutButton" class="cta-button secondary-button">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
+            <div class="profile-menu-container">
+                <!-- FIX: Added a span to display the user's name -->
+                <span id="headerProfileName" class="header-profile-name"></span>
+                <button id="profileMenuBtn" class="profile-menu-button">
+                    <i class="fas fa-user-circle"></i>
+                </button>
+            </div>
         </nav>
     </header>
 
-    <main class="dashboard-container">
-        <div class="dashboard-header">
-            <h1 id="welcomeMessage">Welcome, Candidate!</h1>
-            <p>Your scheduled interviews are listed below. Good luck!</p>
+    <!-- The rest of your HTML (sidebar, main content, modals) remains the same -->
+    <div id="profileSidebar" class="profile-sidebar">
+        <div class="sidebar-header">
+            <h4>My Account</h4>
+            <button id="closeSidebarBtn" class="close-sidebar-button">&times;</button>
         </div>
+        <ul class="sidebar-menu">
+            <li><a href="#" id="sidebarEditProfileBtn"><i class="fas fa-user-edit"></i> Edit Profile</a></li>
+            <li><a href="#" id="sidebarAccountBtn"><i class="fas fa-cog"></i> Account Settings</a></li>
+            <li><a href="#" id="sidebarLogoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+        </ul>
+    </div>
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
-        <div class="grid-card scheduled-interviews-card">
-            <h2><i class="fas fa-calendar-alt"></i> Your Scheduled Interviews</h2>
-            <div id="scheduledInterviewsList" class="interview-list">
-                <div class="skeleton-loader"></div>
-                <div class="skeleton-loader"></div>
-                <div class="skeleton-loader"></div>
+    <main class="dashboard-grid">
+        <aside class="sidebar">
+            <div class="grid-card profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar"><i class="fas fa-user-astronaut"></i></div>
+                    <div class="profile-info">
+                        <h2 id="profileName">Loading...</h2>
+                        <p id="profileEmail">Loading...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid-card metrics-card">
+                <h3><i class="fas fa-chart-line"></i> Your Progress</h3>
+                <div class="metrics-grid">
+                    <div class="metric-item">
+                        <i class="fas fa-video"></i>
+                        <span id="interviewsCompleted">0</span>
+                        <p>Interviews Completed</p>
+                    </div>
+                    <div class="metric-item">
+                        <i class="fas fa-star-half-alt"></i>
+                        <span id="averageScore">N/A</span>
+                        <p>Average Score</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <section class="main-content">
+            <div class="grid-card interviews-panel">
+                <nav class="tabs">
+                    <button class="tab-link active" data-tab="scheduled"><i class="fas fa-calendar-alt"></i> Scheduled</button>
+                    <button class="tab-link" data-tab="history"><i class="fas fa-history"></i> History</button>
+                    <button class="tab-link" data-tab="results"><i class="fas fa-award"></i> Results</button>
+                </nav>
+                <div id="scheduled" class="tab-content active">
+                    <div id="scheduledInterviewsList" class="interview-list">
+                        <div class="skeleton-loader"></div>
+                        <div class="skeleton-loader"></div>
+                    </div>
+                </div>
+                <div id="history" class="tab-content">
+                    <div id="interviewHistoryList" class="interview-list">
+                        <div class="skeleton-loader"></div>
+                        <div class="skeleton-loader"></div>
+                    </div>
+                </div>
+                <div id="results" class="tab-content">
+                    <div class="results-coming-soon">
+                        <i class="fas fa-hourglass-half"></i>
+                        <h3>Results are coming soon!</h3>
+                        <p>You’ll be able to view your detailed interview performance soon.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+    
+    <div id="profileModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content wide-modal">
+            <div class="modal-header">
+                <h2>Edit Your Profile</h2>
+                <button id="closeModalBtn" class="close-button">&times;</button>
+            </div>
+            
+            <div class="form-scroll-container">
+                <form id="profileForm" class="horizontal-profile-form">
+                    <!-- First Row: Names and Email -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modalProfileFirstName">First Name</label>
+                            <input type="text" id="modalProfileFirstName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalProfileLastName">Last Name</label>
+                            <input type="text" id="modalProfileLastName" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalProfileEmail">Email</label>
+                            <input type="email" id="modalProfileEmail" disabled>
+                        </div>
+                    </div>
+
+                    <!-- Second Row: Title and Portfolio -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="modalProfileTitle">Professional Title</label>
+                            <input type="text" id="modalProfileTitle">
+                        </div>
+                        <div class="form-group">
+                            <label for="modalProfilePortfolio">Portfolio URL</label>
+                            <input type="url" id="modalProfilePortfolio">
+                        </div>
+                    </div>
+
+                    <!-- Third Row: Bio (spans full width) -->
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label for="modalProfileBio">About You</label>
+                            <textarea id="modalProfileBio" maxlength="500" rows="4"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Actions: Buttons side by side -->
+                    <div class="form-row actions-row">
+                        <button type="button" id="cancelProfileBtn" class="cta-button secondary-button">Cancel</button>
+                        <button type="submit" class="cta-button primary-button">Save Changes</button>
+                    </div>
+                </form>
             </div>
         </div>
-    </main>
+    </div>
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Preparing your interview room...</p>
+    </div>
 
+    <script src="/js/apiClient.js" defer></script>
     <script src="/js/dashboard.js" defer></script>
 </body>
 </html>

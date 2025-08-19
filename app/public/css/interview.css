@@ -251,3 +251,40 @@ body {
 .messages-container::-webkit-scrollbar-track { background: transparent; }
 .messages-container::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 3px; }
 .messages-container::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.4); }
+
+/* Recording state styles */
+.mic-button.recording {
+    background-color: #e74c3c !important;
+    animation: pulse-recording 1.5s infinite;
+}
+
+.mic-button.recording:hover {
+    background-color: #c0392b !important;
+}
+
+@keyframes pulse-recording {
+    0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(231, 76, 60, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+}
+
+/* Voice activity indicator states */
+.voice-activity-indicator.user-recording .voice-bubble {
+    background-color: #e74c3c;
+    animation: bounce 1.2s infinite ease-in-out;
+}
+
+.voice-activity-indicator.ai-speaking .voice-bubble {
+    background-color: #3498db;
+    animation: bounce 1.2s infinite ease-in-out;
+}
+
+/* Make voice bubbles more responsive */
+.voice-bubble:nth-child(1) { animation-delay: -0.32s; }
+.voice-bubble:nth-child(2) { animation-delay: -0.16s; }
+.voice-bubble:nth-child(3) { animation-delay: 0s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: scale(0); }
+    40% { transform: scale(1); }
+}

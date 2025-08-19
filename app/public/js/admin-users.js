@@ -1,4 +1,8 @@
 // /app/public/js/admin-users.js (Final Version with Search and full CRUD)
+const userTableBody = document.getElementById('userTableBody');
+const roleFilter = document.getElementById('roleFilter');
+const statusFilter = document.getElementById('statusFilter');
+const userSearchInput = document.getElementById('userSearchInput');
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- State ---
@@ -29,6 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const setupEventListeners = () => {
         addUserBtn.addEventListener('click', () => openModal('create'));
         cancelBtn.addEventListener('click', closeModal);
+        roleFilter.addEventListener('change', handleFilterChange);
+        statusFilter.addEventListener('change', handleFilterChange);
+
         userModal.addEventListener('click', (e) => {
             if (e.target === userModal) closeModal();
         });
@@ -52,45 +59,71 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    function handleFilterChange() {
+        const roleValue = roleFilter.value;
+        const statusValue = statusFilter.value;
+
+        let filtered = allUsers;
+
+        if (roleValue) {
+            filtered = filtered.filter(u => u.role === roleValue);
+        }
+        if (statusValue) {
+            filtered = filtered.filter(u => (u.accountStatus || '') === statusValue);
+        }
+
+        // Also apply search term if present
+        const searchTerm = userSearchInput.value.toLowerCase().trim();
+        if (searchTerm) {
+            filtered = filtered.filter(user => {
+                const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
+                const email = user.email.toLowerCase();
+                return fullName.includes(searchTerm) || email.includes(searchTerm);
+            });
+        }
+
+        renderTable(filtered);
+    }
+
+
+
     // --- NEW: Search Handler ---
     const handleSearch = (e) => {
-        const searchTerm = e.target.value.toLowerCase().trim();
-        const filteredUsers = allUsers.filter(user => {
-            const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
-            const email = user.email.toLowerCase();
-            return fullName.includes(searchTerm) || email.includes(searchTerm);
-        });
-        renderTable(filteredUsers);
+        handleFilterChange();
     };
 
     // --- Data & Rendering ---
     const fetchAndRenderUsers = async () => {
         try {
-            userTableBody.innerHTML = '<tr><td colspan="5" class="loading-text">Loading users...</td></tr>';
-            allUsers = await apiClient('/admin/users', 'GET');
-            renderTable(allUsers);
-        } catch (error) {
-            userTableBody.innerHTML = `<tr><td colspan="5" class="loading-text">Error: ${error.message}</td></tr>`;
-        }
+                userTableBody.innerHTML = '<tr><td colspan="7" class="loading-text">Loading users...</td></tr>';
+                console.log('Attempting to fetch users from /admin/users...');
+                allUsers = await apiClient('/admin/users', 'GET');
+                console.log('Users fetched successfully:', allUsers);
+                renderTable(allUsers);
+            } catch (error) {
+                console.error('Fetch error:', error);
+                userTableBody.innerHTML = `<tr><td colspan="7" class="loading-text">Error: ${error.message}</td></tr>`;
+            }
     };
 
     const renderTable = (users) => {
         userTableBody.innerHTML = '';
-        if (users.length === 0) {
-            userTableBody.innerHTML = '<tr><td colspan="5" class="loading-text">No users found.</td></tr>';
+        if (!Array.isArray(users) || users.length === 0) {
+            userTableBody.innerHTML = '<tr><td colspan="7" class="loading-text">No users found.</td></tr>';
             return;
         }
         users.forEach(user => {
             const row = document.createElement('tr');
-            const createdAt = new Date(user.createdAt).toLocaleDateString();
             row.innerHTML = `
                 <td>${user.firstName} ${user.lastName}</td>
                 <td>${user.email}</td>
                 <td>${user.role}</td>
-                <td>${createdAt}</td>
+                <td>${user.accountStatus || ''}</td>
+                <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : ''}</td>
+                <td>${user.lastLogin ? new Date(user.lastLogin).toLocaleString() : '--'}</td>
                 <td>
-                    <button class="action-btn edit-btn" data-user-id="${user.id}" title="Edit User"><i class="fas fa-edit"></i></button>
-                    <button class="action-btn delete-btn" data-user-id="${user.id}" title="Delete User"><i class="fas fa-trash"></i></button>
+                    <button class="action-btn edit-btn" data-user-id="${user.id || user._id}" title="Edit User"><i class="fas fa-edit"></i></button>
+                    <button class="action-btn delete-btn" data-user-id="${user.id || user._id}" title="Delete User"><i class="fas fa-trash"></i></button>
                 </td>
             `;
             userTableBody.appendChild(row);
@@ -107,11 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('password').setAttribute('required', 'true');
         } else if (mode === 'edit' && user) {
             modalTitle.textContent = 'Edit User';
-            document.getElementById('userId').value = user.id;
+            document.getElementById('userId').value = user.id || user._id;
             document.getElementById('firstName').value = user.firstName;
             document.getElementById('lastName').value = user.lastName;
             document.getElementById('email').value = user.email;
             document.getElementById('role').value = user.role;
+            document.getElementById('accountStatus').value = user.accountStatus || 'active';
             document.getElementById('password').removeAttribute('required');
         }
         userModal.classList.remove('hidden');

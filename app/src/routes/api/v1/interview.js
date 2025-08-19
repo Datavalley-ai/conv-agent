@@ -10,7 +10,8 @@ const {
     submitAnswer,
     endInterview,
     getMyScheduledInterviews,
-    startScheduledInterview // <-- Import the new function
+    startScheduledInterview,
+    getInterviewHistory // <-- Add this new function // <-- Import the new function
     
 } = require('../../../controllers/interviewController');
 
@@ -18,6 +19,7 @@ const auth = require('../../../middleware/auth');
 
 // Import the authentication middleware
 router.get('/my-sessions', auth, getMyScheduledInterviews);
+router.get('/history', auth, getInterviewHistory);
 router.get('/:sessionId', auth, getInterviewSession);
 router.post('/:sessionId/start-scheduled', auth, startScheduledInterview);
 router.post('/:sessionId/answer', auth, submitAnswer);

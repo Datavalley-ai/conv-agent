@@ -110,34 +110,17 @@ exports.deleteUser = async (req, res, next) => { /* ... (unchanged) ... */
     }
 };
 
-
-// --- NEW: GROUP MANAGEMENT ---
+// --- NEW: FULL GROUP MANAGEMENT ---
+// Replace your existing group functions with this complete set.
 
 /**
  * @desc    Create a new group
- * @route   POST /api/v1/admin/groups
- * @access  Private (Admin)
  */
 exports.createGroup = async (req, res, next) => {
     try {
-        const { name, description, members } = req.body;
-        const createdBy = req.user.id;
-
-        if (!name) {
-            return res.status(400).json({ message: 'Group name is required.' });
-        }
-
-        const newGroup = await Group.create({
-            name,
-            description,
-            createdBy,
-            members: members || [] // Accept an initial list of members if provided
-        });
-
-        res.status(201).json({
-            message: 'Group created successfully.',
-            group: newGroup
-        });
+        const { name, description, tags, metadata } = req.body;
+        const group = await Group.create({ name, description, tags, metadata, createdBy: req.user.id });
+        res.status(201).json(group);
     } catch (error) {
         next(error);
     }
@@ -145,17 +128,79 @@ exports.createGroup = async (req, res, next) => {
 
 /**
  * @desc    Get all groups
- * @route   GET /api/v1/admin/groups
- * @access  Private (Admin)
  */
 exports.getAllGroups = async (req, res, next) => {
     try {
-        // Populate 'members' to get user details, and 'createdBy' for admin details
-        const groups = await Group.find()
-            .populate('createdBy', 'firstName lastName email')
-            .populate('members', 'firstName lastName email');
-            
+        const groups = await Group.find().populate('members', 'firstName lastName email');
         res.status(200).json(groups);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Update a group's details
+ */
+exports.updateGroup = async (req, res, next) => {
+    try {
+        const { name, description, tags, status, metadata } = req.body;
+        const group = await Group.findByIdAndUpdate(
+            req.params.groupId,
+            { name, description, tags, status, metadata },
+            { new: true, runValidators: true }
+        );
+        if (!group) return res.status(404).json({ message: 'Group not found.' });
+        res.status(200).json(group);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Delete a group
+ */
+exports.deleteGroup = async (req, res, next) => {
+    try {
+        const group = await Group.findByIdAndDelete(req.params.groupId);
+        if (!group) return res.status(404).json({ message: 'Group not found.' });
+        res.status(204).send(); // No content
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Add a member to a group
+ */
+exports.addMemberToGroup = async (req, res, next) => {
+    try {
+        const { userId } = req.body;
+        const group = await Group.findByIdAndUpdate(
+            req.params.groupId,
+            { $addToSet: { members: userId } }, // $addToSet prevents duplicates
+            { new: true }
+        ).populate('members', 'firstName lastName email');
+        
+        if (!group) return res.status(404).json({ message: 'Group not found.' });
+        res.status(200).json(group);
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Remove a member from a group
+ */
+exports.removeMemberFromGroup = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const group = await Group.findByIdAndUpdate(
+            req.params.groupId,
+            { $pull: { members: userId } },
+            { new: true }
+        );
+        if (!group) return res.status(404).json({ message: 'Group not found.' });
+        res.status(200).json({ message: 'Member removed successfully.' });
     } catch (error) {
         next(error);
     }

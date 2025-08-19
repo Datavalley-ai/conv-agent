@@ -180,9 +180,16 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const updateUIAfterRecordingToggle = () => {
         elements.voiceButton.classList.toggle('recording', AppState.isRecording);
+        
         if (AppState.isRecording) {
-            showVoiceActivity('Listening...');
+            // Show user they're recording and can click to stop
+            elements.voiceButton.innerHTML = '<i class="fas fa-stop"></i>';
+            elements.voiceButton.title = 'Stop Recording';
+            showVoiceActivity('Listening... (Click to stop)');
         } else {
+            // Reset to mic icon
+            elements.voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
+            elements.voiceButton.title = 'Start Recording';
             showVoiceActivity('Processing...');
         }
     };
@@ -205,6 +212,11 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Transcription error:', error);
             elements.responseInput.value = `[Error: Could not transcribe audio. Please type your answer.]`;
         } finally {
+            // IMPORTANT: Reset recording state
+            AppState.isRecording = false;
+            elements.voiceButton.innerHTML = '<i class="fas fa-microphone"></i>';
+            elements.voiceButton.title = 'Start Recording';
+            elements.voiceButton.classList.remove('recording');
             hideVoiceActivity();
         }
     };
@@ -243,8 +255,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const showVoiceActivity = (text, isAI = false) => {
         elements.voiceStatusText.textContent = text;
         elements.voiceActivityOverlay.classList.add('visible');
+        
+        const indicator = elements.voiceActivityOverlay.querySelector('.voice-activity-indicator');
         if (isAI) {
-            elements.voiceActivityOverlay.querySelector('.voice-activity-indicator').classList.add('ai-speaking');
+            indicator.classList.add('ai-speaking');
+            indicator.classList.remove('user-recording');
+        } else if (AppState.isRecording) {
+            indicator.classList.add('user-recording');
+            indicator.classList.remove('ai-speaking');
+        } else {
+            indicator.classList.remove('ai-speaking', 'user-recording');
         }
     };
 
