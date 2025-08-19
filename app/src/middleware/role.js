@@ -4,7 +4,8 @@
  * Middleware factory that creates a middleware to check for user roles.
  * @param {...string} allowedRoles - A list of role strings that are allowed access.
  * @returns {function} An Express middleware function.
- */
+ */const logger = require('../utils/logger'); 
+
 const requireRole = (...allowedRoles) => {
     return (req, res, next) => {
         // This middleware must run *after* the main auth middleware,

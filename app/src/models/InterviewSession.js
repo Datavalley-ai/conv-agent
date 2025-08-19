@@ -68,7 +68,7 @@ const interviewSessionSchema = new mongoose.Schema(
         /* ——— Lifecycle ——— */
         status: {
             type: String,
-            enum: ['scheduled', 'active', 'completed', 'terminated', 'failed', 'expired', 'archived', 'review_pending'],
+            enum: ['scheduled','initializing', 'active', 'completed', 'terminated', 'failed', 'expired', 'archived', 'review_pending'],
             default: 'scheduled',
             index: true
         },

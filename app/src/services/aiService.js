@@ -1,9 +1,8 @@
-// /app/src/services/aiService.js (Final Version)
+// /app/src/services/aiService.js (Final and Complete Version)
 
 const axios = require('axios');
 const logger = require('../utils/logger');
 
-// --- Configuration ---
 const OLLAMA_URL = process.env.OLLAMA_URL;
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL;
 
@@ -23,18 +22,29 @@ const createPayload = (messages, model, expectJson = false) => {
 const queryLanguageModel = async (messages, expectJson = false) => {
     try {
         const payload = createPayload(messages, OLLAMA_MODEL, expectJson);
+        logger.info(`Sending initial payload to Ollama...`);
         
-        const response = await axios.post(`${OLLAMA_URL}/api/generate`, payload, {
-            timeout: 60000,
+        // The first request might take a long time if the model is loading
+        let response = await axios.post(`${OLLAMA_URL}/api/generate`, payload, {
+            timeout: 180000, // 90 second timeout to allow for model loading
         });
 
-        // Added detailed logging for the raw response for easier debugging
-        logger.info(`OLLAMA RAW RESPONSE: ${JSON.stringify(response.data)}`);
-        
+        logger.info(`OLLAMA RAW RESPONSE 1: ${JSON.stringify(response.data)}`);
+
+        // If the first response was just to load the model, make the request again.
+        if (response.data && response.data.done_reason === 'load') {
+            logger.info('Model finished loading, sending request again for the actual response...');
+            response = await axios.post(`${OLLAMA_URL}/api/generate`, payload, {
+                timeout: 60000, // Shorter timeout for the now-loaded model
+            });
+            logger.info(`OLLAMA RAW RESPONSE 2: ${JSON.stringify(response.data)}`);
+        }
+
         const content = response.data.response;
 
-        if (!content) {
-            throw new Error('Ollama response is missing the "response" property.');
+        // Final check to ensure we have valid, non-empty content
+        if (typeof content !== 'string' || content.trim() === '') {
+            throw new Error('Ollama returned an empty or invalid response after loading.');
         }
 
         if (expectJson) {
@@ -43,37 +53,23 @@ const queryLanguageModel = async (messages, expectJson = false) => {
         return content.trim();
 
     } catch (error) {
-        // --- IMPROVED ERROR LOGGING ---
         const errorMessage = error.response ? JSON.stringify(error.response.data) : error.message;
-        logger.error(`Error querying Ollama Model. URL: ${OLLAMA_URL}, Model: ${OLLAMA_MODEL}, Error: ${errorMessage}`, { stack: error.stack });
-        
-        if (expectJson) {
-            return { summary: 'Could not generate feedback due to an AI service error.', score: 0, strengths: [], areasForImprovement: [] };
-        }
-        return "I apologize, but I am encountering a technical issue. Could you please repeat your answer?";
+        logger.error(`Error querying Ollama Model. URL: ${OLLAMA_URL}, Error: ${errorMessage}`);
+        throw new Error(`The AI service failed to respond. ${errorMessage}`);
     }
 };
 
-// --- THIS FUNCTION IS NOW UPDATED ---
-exports.getInitialQuestion = async ({ candidateName, jobRole, interviewType, interviewDuration }) => {
-    const messages = [
-        {
-            role: 'system',
-            content: "You are a friendly but professional AI interviewer named 'DataValley AI'. Your task is to start the interview by first delivering a welcome script and then immediately asking your first question. The entire response must be a single block of text. Follow these instructions exactly:\n\n1.  **Welcome Script:** Address the candidate by their first name. Inform them the interview is about to begin and state the total duration. Gently remind them to be prepared.\n\n2.  **First Question:** After the welcome script, ask your first open-ended question relevant to their job role and the interview type.\n\n3.  **Tone:** Maintain a welcoming and professional tone throughout.\n\n4.  **Constraint:** Do not ask the candidate if they are ready. Assume they are and proceed directly from the welcome script to the first question."
-        },
-        {
-            role: 'user',
-            content: `Start the interview now with the following details:\n\nINTERVIEW DETAILS:\n- Candidate Name: ${candidateName}\n- Job Role: ${jobRole}\n- Interview Type: ${interviewType}\n- Duration: ${interviewDuration}`
-        }
-    ];
+exports.getInitialQuestion = async (promptData) => {
+    const { candidateName, jobRole, interviewType } = promptData;
+    const systemPrompt = `You are a friendly and professional AI interviewer from DataValley AI named Alex. Your task is to begin a ${interviewType} interview for a ${jobRole} position with a candidate named ${candidateName}. Your response must be the start of the conversation. First, introduce yourself briefly. Second, greet the candidate by their name. Third, ask your first relevant technical question. Do not ask if they are ready. Begin the interview now.`;
+    const messages = [{ role: 'system', content: systemPrompt }];
     return queryLanguageModel(messages);
 };
 
-exports.getNextQuestion = async (messageHistory) => {
-    const messages = [
-        { role: 'system', content: `You are an expert AI interviewer. Based on the candidate's last answer, ask one relevant follow-up question.` },
-        ...messageHistory
-    ];
+exports.getNextQuestion = async (promptData) => {
+    const { jobRole, interviewType, messageHistory } = promptData;
+    const systemPrompt = `You are an expert AI interviewer conducting a ${interviewType} interview for a ${jobRole} role. The candidate's last answer is at the end of the provided history. Based on the entire conversation, ask the next single, relevant follow-up question. Do not repeat questions. Keep the conversation flowing naturally.`;
+    const messages = [{ role: 'system', content: systemPrompt }, ...messageHistory];
     return queryLanguageModel(messages);
 };
 

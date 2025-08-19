@@ -28,9 +28,12 @@ app.use(
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
       "connect-src": ["'self'", "https://accounts.google.com"],
+      "img-src": ["'self'", "data:", "https://i.imgur.com"], // <-- ADDED imgur.com
+      "media-src": ["'self'", "blob:"], // <-- ADD THIS LINE FOR AUDIO
     },
   })
 );
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

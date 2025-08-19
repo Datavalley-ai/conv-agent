@@ -5,6 +5,100 @@ const Conversation = require('../models/Conversation'); // <-- IMPORT THE NEW MO
 const aiService = require('../services/aiService');
 
 /**
+ * @desc    Kicks off the AI warm-up process in the background.
+ * @route   POST /api/v1/interview/:sessionId/start
+ */
+exports.startInterviewInitialization = async (req, res, next) => {
+    try {
+        const { sessionId } = req.params;
+        const { id: candidateId, name: candidateName } = req.user;
+
+        const session = await InterviewSession.findOne({ _id: sessionId, candidateId, status: 'scheduled' });
+
+        if (!session) {
+            return res.status(404).json({ message: 'Scheduled interview not found.' });
+        }
+
+        // Set status to initializing and save
+        session.status = 'initializing';
+        await session.save();
+
+        // Immediately respond to the client so it can start polling
+        res.status(202).json({ message: 'Interview initialization process started.' });
+
+        // --- Perform the slow AI task in the background (fire-and-forget) ---
+        (async () => {
+            try {
+                const initialPromptData = {
+                    candidateName: candidateName || 'the candidate',
+                    jobRole: session.jobRole || 'the specified role',
+                    interviewType: session.interviewType || 'technical'
+                };
+                const firstMessageContent = await aiService.getInitialQuestion(initialPromptData);
+
+                await Conversation.create({
+                    sessionId: session._id,
+                    role: 'assistant',
+                    content: firstMessageContent,
+                });
+
+                // Once done, update status to active
+                session.status = 'active';
+                session.startedAt = new Date();
+                await session.save();
+                console.log(`Session ${session._id} successfully activated.`);
+
+            } catch (error) {
+                console.error(`Failed to initialize session ${session._id}:`, error);
+                // If AI fails, mark the session as failed
+                session.status = 'failed';
+                await session.save();
+            }
+        })();
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Checks the status of an initializing interview.
+ * @route   GET /api/v1/interview/:sessionId/status
+ */
+exports.getInitializationStatus = async (req, res, next) => {
+    try {
+        const { sessionId } = req.params;
+        const { id: candidateId } = req.user;
+
+        const session = await InterviewSession.findOne({ _id: sessionId, candidateId });
+
+        if (!session) {
+            return res.status(404).json({ message: 'Interview session not found.' });
+        }
+
+        if (session.status === 'initializing') {
+            return res.status(200).json({ status: 'initializing', message: 'AI model is loading...' });
+        }
+        
+        if (session.status === 'active') {
+            const messages = await Conversation.find({ sessionId: session._id }).sort({ createdAt: 1 });
+            return res.status(200).json({ status: 'ready', session: { ...session.toObject(), messages } });
+        }
+        
+        if (session.status === 'failed') {
+            return res.status(500).json({ status: 'failed', message: 'The AI interviewer failed to start. Please try again later.' });
+        }
+
+        // For any other status, indicate that the request is invalid
+        res.status(400).json({ status: 'error', message: 'This interview cannot be started.' });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+
+/**
  * @desc    Start a new ad-hoc interview session
  */
 exports.startInterview = async (req, res, next) => {
@@ -91,37 +185,9 @@ exports.startScheduledInterview = async (req, res, next) => {
     }
 };
 
-/**
- * @desc    Get an existing interview session's state
- */
-exports.getInterviewSession = async (req, res, next) => {
-    try {
-        const { sessionId } = req.params;
-        const { id: candidateId } = req.user;
-
-        const session = await InterviewSession.findOne({ _id: sessionId, candidateId });
-
-        if (!session) {
-            return res.status(404).json({ message: 'Interview session not found.' });
-        }
-        
-        // --- CHANGED: Fetch all messages from the Conversation collection ---
-        const messages = await Conversation.find({ sessionId: session._id }).sort({ createdAt: 1 });
-
-        res.status(200).json({
-            sessionId: session._id,
-            jobRole: session.jobRole,
-            status: session.status,
-            messages: messages.map(msg => ({ role: msg.role, content: msg.content })),
-        });
-
-    } catch (error) {
-        next(error);
-    }
-};
 
 /**
- * @desc    Submit an answer and get the next question
+ * @desc     Submit an answer and get the next question
  */
 exports.submitAnswer = async (req, res, next) => {
     try {
@@ -129,28 +195,34 @@ exports.submitAnswer = async (req, res, next) => {
         const { answer } = req.body;
         const { id: candidateId } = req.user;
 
-        // ... (validation remains the same)
-
+        // --- THIS IS THE FIX ---
+        // We must fetch the session details *first* to get the context.
         const session = await InterviewSession.findOne({ _id: sessionId, candidateId, status: 'active' });
 
         if (!session) {
             return res.status(404).json({ message: 'Active interview session not found.' });
         }
 
-        // --- CHANGED: Create a new document for the user's answer ---
+        // --- Create the user's answer ---
         await Conversation.create({
             sessionId: session._id,
             role: 'user',
             content: answer,
         });
         
-        // --- CHANGED: Fetch the full history to send to the AI ---
+        // --- Fetch the complete history AFTER adding the user's new answer ---
         const messageHistory = await Conversation.find({ sessionId: session._id }).sort({ createdAt: 1 });
         const historyForAI = messageHistory.map(msg => ({ role: msg.role, content: msg.content }));
 
-        const nextQuestion = await aiService.getNextQuestion(historyForAI);
+        // --- CORRECTED: Pass the full context object to the AI service ---
+        const nextQuestion = await aiService.getNextQuestion({
+            jobRole: session.jobRole,
+            interviewType: session.interviewType,
+            difficulty: session.difficulty,
+            messageHistory: historyForAI
+        });
         
-        // --- CHANGED: Create a new document for the assistant's question ---
+        // --- Create the assistant's new question ---
         await Conversation.create({
             sessionId: session._id,
             role: 'assistant',

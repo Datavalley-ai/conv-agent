@@ -36,9 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- API & Data ---
     const fetchAllUsers = async () => {
         try {
-            userCache = await apiClient('/admin/users', 'GET');
+            const response = await apiClient('/admin/users', 'GET');
+            // Pluck the array from the response object. Adjust the property 
+            // name ('users' or 'data') to match your API.
+            userCache = response.users || response.data || [];
         } catch (error) {
             console.error('Failed to fetch user list for autocomplete:', error);
+            userCache = []; // Ensure userCache is an array even on error
         }
     };
 

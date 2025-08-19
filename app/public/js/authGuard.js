@@ -1,11 +1,5 @@
-// /app/public/js/authGuard.js
+// /public/js/authGuard.js (Modified)
 
-/**
- * An IIFE (Immediately Invoked Function Expression) that runs automatically on every page load.
- * This script acts as a client-side route guard, ensuring that only authenticated
- * users can access protected pages and that authenticated users are redirected
- * away from public-only pages like the sign-in screen.
- */
 (function() {
     // Attempt to retrieve the authentication token from browser's local storage.
     const token = localStorage.getItem('authToken');
@@ -17,7 +11,6 @@
     const protectedPages = ['dashboard.html', 'interview.html', 'results.html'];
     
     // Define pages that a logged-in user should be redirected away from.
-    // An empty string '' represents the root path (e.g., yourdomain.com/).
     const publicOnlyPages = ['signin.html', 'signup.html', 'index.html', ''];
 
     // SCENARIO 1: User is NOT logged in and is trying to access a protected page.
@@ -36,4 +29,18 @@
         return; // Stop further script execution.
     }
 
+    // --- NEW MODIFICATION ---
+    // SCENARIO 3: User IS logged in and on the interview page, but NO Session ID is present.
+    if (token && currentPage === 'interview.html') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('sessionId');
+
+        if (!sessionId) {
+            console.error('AuthGuard: Access to interview page denied. Missing sessionId. Redirecting to dashboard.');
+            // Show the specific error and redirect them back to the dashboard where they can choose a valid interview.
+            alert('Error: Session ID is missing. Redirecting to dashboard.');
+            window.location.replace('/dashboard.html');
+            return; // Stop further script execution.
+        }
+    }
 })();
