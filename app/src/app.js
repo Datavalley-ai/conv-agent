@@ -18,11 +18,19 @@ const adminRoutes = require('./routes/api/v1/admin');
 const userRoutes = require('./routes/api/v1/userRoutes'); 
 
 
+
 // --- Application Initialization ---
 const app = express();
 
 // --- Core Middleware ---
-app.use(helmet());
+app.use(
+  helmet.contentSecurityPolicy({
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      "connect-src": ["'self'", "https://accounts.google.com"],
+    },
+  })
+);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -71,7 +79,7 @@ const PORT = process.env.PORT || 3000;
 const startServer = async () => {
     try {
         await connectDB();
-        const server = app.listen(PORT, () => {
+        const server = app.listen(PORT, '0.0.0.0',() => {
             logger.info(`✅ Server is running in ${process.env.NODE_ENV} mode on port ${PORT}`);
         });
 

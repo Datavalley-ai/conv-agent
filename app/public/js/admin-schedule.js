@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const result = await apiClient('/admin/interviews/schedule', 'POST', data);
+            const result = await apiClient('/api/v1/admin/interviews/schedule', 'POST', data);
             showMessage(`Success! Interview scheduled. Session ID: ${result.session._id}`, 'success');
             scheduleForm.reset();
         } catch (error) {
