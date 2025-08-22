@@ -17,7 +17,7 @@ data:
   
   # --- AI Service Config ---
   # Correct variable name for the model
-  OLLAMA_MODEL: "llama3.1:8b-instruct-q5_K_M"
+  OLLAMA_MODEL: "gemma2:2b-instruct"
 
   # Correct variable name and the full internal GKE URL for the wrapper service.
   # This points to the 'ai-interviewer' ClusterIP service defined below.
@@ -70,7 +70,7 @@ spec:
     spec:
       containers:
       - name: ai-interviewer
-        image: asia-south1-docker.pkg.dev/datavalley-383814/ai-interviewer/ai-interviewer:v2.2.5
+        image: asia-south1-docker.pkg.dev/datavalley-383814/ai-interviewer/ai-interviewer:v2.2.6
         ports:
         - containerPort: 8081
         env:

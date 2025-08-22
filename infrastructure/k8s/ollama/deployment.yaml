@@ -11,10 +11,48 @@ spec:
     metadata:
       labels: { app: ollama }
     spec:
+      initContainers:
+      - name: ollama-pull-model
+        image: ollama/ollama:latest
+        # Using "command" is more explicit than "args" alone
+        command: ["ollama"]
+        args:
+          - "pull"
+          - "gemma2:2b-instruct"
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "512Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        volumeMounts:
+          - name: models
+            mountPath: /root/.ollama
       containers:
       - name: ollama
         image: ollama/ollama:latest
-        args: ["serve"]
+        # --- THIS IS THE MAIN FIX ---
+        # This new command starts the server and immediately pre-loads the model.
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            ollama serve &
+            PID=$!
+            echo "Ollama server started in background with PID $PID"
+            
+            # Wait a few seconds for the server to initialize
+            sleep 5
+            
+            echo "Pre-warming model: gemma2:2b-instruct..."
+            # Send a silent request to the server to load the model into memory
+            curl -s http://localhost:11434/api/generate -d '{ "model": "gemma2:2b-instruct", "prompt": "Pre-warm", "stream": false }' > /dev/null
+            
+            echo "Model is pre-warmed. The server is ready."
+            
+            # Wait for the background server process to finish
+            wait $PID
+        # --- END OF FIX ---
         ports:
           - containerPort: 11434
         env:
@@ -24,18 +62,19 @@ spec:
             value: "0.0.0.0"
         resources:
           requests:
-            cpu: "2000m"
-            memory: "10Gi"
+            cpu: "1500m"
+            memory: "6Gi"
           limits:
-            cpu: "4000m"
-            memory: "14Gi"
+            cpu: "3000m"
+            memory: "8Gi"
         volumeMounts:
           - name: models
             mountPath: /root/.ollama
         readinessProbe:
-          httpGet: { path: /api/tags, port: 11434 }
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          httpGet: { path: /, port: 11434 } # Changed to a simpler health check path
+          # Increased delay to give the model plenty of time to load into memory
+          initialDelaySeconds: 60
+          periodSeconds: 15
       volumes:
         - name: models
           persistentVolumeClaim:
